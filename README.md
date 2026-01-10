@@ -29,7 +29,7 @@ Backend must
 
 ## functions of backend
 
-### input handling
+input handling
 PR data:
 - PR url must contain owner, repo and PR number
 - reject if not valid
@@ -69,3 +69,61 @@ your job:
 - Pass metadata exactly as required
 - Capture output
 - Do not interpret results
+
+LLM request:
+Generate risk suggestions using 
+- repo context
+- PR summary 
+- ML response
+
+input to LLM
+```
+{
+  "risk_label": "HIGH",
+  "risk_score": 0.72,
+  "pr_summary": "...",
+  "diff_summary": "..."
+}
+```
+Output from LLM
+```
+{
+  "review_comments": "This PR introduces risky changes..."
+}
+
+```
+
+Final response to frontend
+format:
+```
+{
+  "risk_label": "HIGH",
+  "risk_score": 0.72,
+  "review_comments": "..."
+}
+```
+
+Need to desin how to show this in frontend
+
+### Error handling
+- invalid URL              - 500
+- API failure              - 502
+- ML model request failure - 500
+- LLM failure              - 500
+
+
+### Data Flow
+
+Frontend
+  ↓
+/analyze-pr (PR URL)
+  ↓
+GitHub API → normalize metadata
+  ↓
+/ml/predict
+  ↓
+/llm/generate-review
+  ↓
+Frontend
+
+#TODO: Design request and respose schemas
