@@ -55,3 +55,17 @@ Normalize data: before sending to ML
   ...
 }
 ```
+ML model response:
+- ML model already exists (I'll create it)
+
+```
+{
+  "risk_score": 0.72,
+  "risk_label": "HIGH"
+}
+```
+
+your job:
+- Pass metadata exactly as required
+- Capture output
+- Do not interpret results
