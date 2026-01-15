@@ -38,17 +38,15 @@ Our tool leverages repository context and historical patterns to quantify the ri
 
 Ultimately, what frontend sends as input and expects what output from the backend.
 
-request body(JSON):
+request body`JSON`:
 ```
-`JSON` 
 {
 "PR_URL": "..."
 }
 ```
 
-response body(JSON):
+response body`JSON`: 
 ```
-`JSON` 
 {
 "risk_score": 123,
 "prediction": "...",
