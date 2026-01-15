@@ -1,5 +1,3 @@
-# Github Pull Request Reviewer
-
 A project which reads on historical data to determine whether a PR is risky or not and further suggestions to improve it if risky
 
 ## Backend Objective

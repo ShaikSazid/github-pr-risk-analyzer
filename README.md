@@ -1,12 +1,12 @@
-# Product Requirement Document
+# Github Pull Request Reviewer
 
-## Objective
+## Product Requirement Document
 
 ### Problem
 
 PR merges are traditionally "high-stakes" moments in the development lifecycle. No matter the level of preparation, unforeseen regressions and integration conflicts often disrupt the workflow.
 
-### SOlution 
+### Solution 
 
 Our tool leverages repository context and historical patterns to quantify the risk of any given PR. Using an LLM-driven analysis, it anticipates specific technical hurdles and provides developers with actionable resolutions before the "Merge" button is even clicked.
 
@@ -17,9 +17,9 @@ Our tool leverages repository context and historical patterns to quantify the ri
 3. System will evaluate the risk score and use LLM to generate the steps to mitigate it.
 4. User will follow the advise to mitigate the risks.
 
-**note** The website will not manage, edit or tamper with the github code in any form. The user must manually make changes, whatever it may be.
+**Note** The website will not manage, edit or tamper with the github code in any form. The user must manually make changes, whatever it may be.
 
-## The Data Flow
+## The Data Flow **#TODO**
 
 ### Input
 ### Transformation
@@ -62,7 +62,7 @@ response body(JSON):
 No database scheme needed for backend. 
 For ML ~~ To Be Decided ~~
 
-### ML Specification  **TODO**
+### ML Specification  **#TODO**
 
 - Model Architecture: 
 - Input Shape:
