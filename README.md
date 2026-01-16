@@ -30,7 +30,7 @@ Our tool leverages repository context and historical patterns to quantify the ri
 
 ### Sytem Architectural Design
 
-- Frontend: ~~To be decided~~
+- Frontend: ~~To be decided~~ **#TODO**
 - Backend: FastAPI
 - ML Layer: Embedded in the backend
 
@@ -38,14 +38,14 @@ Our tool leverages repository context and historical patterns to quantify the ri
 
 Ultimately, what frontend sends as input and expects what output from the backend.
 
-request body`JSON`:
+request body(`JSON`):
 ```
 {
 "PR_URL": "..."
 }
 ```
 
-response body`JSON`: 
+response body(`JSON`): 
 ```
 {
 "risk_score": 123,
@@ -55,21 +55,40 @@ response body`JSON`:
 }
 ```
 
-### Database Schema
+### Database Schema **#TODO**
 
-No database scheme needed for backend. 
+No database scheme needed for backend.  
 For ML ~~ To Be Decided ~~
 
-### ML Specification  **#TODO**
+## Machine Learning
 
-- Model Architecture: 
-- Input Shape:
-- Output Shape:
-- Pre trained weights: 
-- metrics: 
+## ML Model
 
-- LLM deets:
+Model to predict the score factor of merging PRs.
 
+- Model: Random Forest Classifier
+- Training Label(Y): Is_risky: if pr > 5 review cycles
+- ML Input(X): PR Metadata. 
+- ML Output: Risk_score(0-10), top_5_contributing_factors
+
+`Heuristic baseline: is there an existing system?`
+
+Input: Features from the PR using github API  
+Output: Risk_score and top_risk_factors
+
+## LLM
+
+Repo context fed to LLM.
+- The Diff - Actual lines changed.
+- related files - If user.js, fetch names of files which imports or uses user.js.
+- recent commit messages - fetch last 5 commit messages for modified files.
+- contrubution/contributing.md - if the repo has any standards, let the LLM know.
+
+- LLM Input: ML risk factors, score, code diff, related file names, 3 or 5 commit messages.
+- LLM Output:
+    1) Explanation of risk
+    2) Mitigation Strategy
+    3) refactored code snippet (If necessary)
 
 ### Dependencies
 
