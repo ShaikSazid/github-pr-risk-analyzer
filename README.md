@@ -71,7 +71,7 @@ Model to predict the score factor of merging PRs.
 - ML Input(X): PR Metadata. 
 - ML Output: Risk_score(0-10), top_5_contributing_factors
 
-`Heuristic baseline: is there an existing system?`
+`Heuristic baseline: is there an existing system? Yes, but only available in Tech Companys as internal tools. Didn't find any tools on the internet`
 
 Input: Features from the PR using github API  
 Output: Risk_score and top_risk_factors
