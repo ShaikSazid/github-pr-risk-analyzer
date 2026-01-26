@@ -1,15 +1,16 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-
-from backend.app.api.v1.analyze import router as analyze_router
-from backend.app.health import router as health_router
-from backend.app.core.exceptions import (
+import uvicorn
+from api.v1.analyze import router as analyze_router
+from core.exceptions import (
+    ApplicationError,
     GitHubAPIError,
     InvalidPullRequestURLError,
-    ApplicationError,
 )
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from health import router as health_router
 
 app = FastAPI(title="GitHub PR Risk Analyzer")
+
 
 @app.exception_handler(GitHubAPIError)
 async def github_api_exception_handler(request: Request, exc: GitHubAPIError):
@@ -21,6 +22,7 @@ async def github_api_exception_handler(request: Request, exc: GitHubAPIError):
         },
     )
 
+
 @app.exception_handler(InvalidPullRequestURLError)
 async def invalid_pr_handler(request: Request, exc: InvalidPullRequestURLError):
     return JSONResponse(
@@ -30,6 +32,7 @@ async def invalid_pr_handler(request: Request, exc: InvalidPullRequestURLError):
             "detail": str(exc),
         },
     )
+
 
 @app.exception_handler(ApplicationError)
 async def application_error_handler(request: Request, exc: ApplicationError):
@@ -44,3 +47,6 @@ async def application_error_handler(request: Request, exc: ApplicationError):
 
 app.include_router(health_router)
 app.include_router(analyze_router, prefix="/api/v1")
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

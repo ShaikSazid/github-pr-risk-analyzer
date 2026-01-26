@@ -1,22 +1,22 @@
-from fastapi import APIRouter
 import logging
 
-from backend.app.schemas.request import AnalyzePRRequest
-from backend.app.schemas.response import AnalyzePRResponse
-from backend.app.utils.pr_parser import parse_pr_url
-from backend.app.services.github_service import (
+from fastapi import APIRouter
+from schemas.request import AnalyzePRRequest
+from schemas.response import AnalyzePRResponse
+from services.github_service import (
+    fetch_contributing,
     fetch_pr,
     fetch_pr_files,
     fetch_recent_commits,
-    fetch_contributing,
 )
-from backend.app.utils.diff_utils import (
+from services.llm_service import generate_review
+from services.ml_service import predict_risk
+from utils.diff_utils import (
     build_diff_summary,
     extract_patch_text,
     limit_diff_text,
 )
-from backend.app.services.ml_service import predict_risk
-from backend.app.services.llm_service import generate_review
+from utils.pr_parser import parse_pr_url
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

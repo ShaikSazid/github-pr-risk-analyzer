@@ -1,5 +1,5 @@
 import httpx
-from backend.app.core.exceptions import MLServiceError
+from core.exceptions import MLServiceError
 
 
 async def predict_risk(normalized_data: dict) -> dict:

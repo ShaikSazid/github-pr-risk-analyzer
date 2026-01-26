@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict, List
 
 MAX_DIFF_CHARS = 4000
 

@@ -1,8 +1,8 @@
-import httpx
 import base64
 
-from backend.app.core.config import settings
-from backend.app.core.exceptions import GitHubAPIError
+import httpx
+from core.config import settings
+from core.exceptions import GitHubAPIError
 
 BASE_URL = "https://api.github.com"
 

@@ -1,5 +1,5 @@
 import httpx
-from backend.app.core.exceptions import LLMServiceError
+from core.exceptions import LLMServiceError
 
 
 async def generate_review(context: dict) -> str:
