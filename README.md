@@ -1,129 +1,96 @@
 # Github Pull Request Reviewer
 
-A project which reads on historical data to determine whether a PR is risky or not and further suggestions to improve it if risky
+## Product Requirement Document
 
-## Backend Objective
+### Problem
 
-It acts as a orchestrator between the frontend and ML
+PR merges are traditionally "high-stakes" moments in the development lifecycle. No matter the level of preparation, unforeseen regressions and integration conflicts often disrupt the workflow.
 
-On a macro level:
-- it receives input
-- fetches data
-- calls ML
-- calls LLM
-- returns results
+### Solution 
 
-**things to note**
-Backend must
-- validate input
-- handle github/API failures cleanly
-- normalize data before sending to ML
-- ML and LLM are stateless functions so keep it in mind
+Our tool leverages repository context and historical patterns to quantify the risk of any given PR. Using an LLM-driven analysis, it anticipates specific technical hurdles and provides developers with actionable resolutions before the "Merge" button is even clicked.
 
-## System Architecture (High-level Overview)
-1) Recieve pull request from frontend
-2) Extract metadata using github API
-3) Pass the data to ML model
-4) Pass ML output + repo context to LLM
-5) Send risk score + AI suggestions to frontend
+### User Flow
 
-## functions of backend
+1. User inputs the PR url into the text box.
+2. The system will fetch the data.
+3. System will evaluate the risk score and use LLM to generate the steps to mitigate it.
+4. User will follow the advise to mitigate the risks.
 
-input handling
-PR data:
-- PR url must contain owner, repo and PR number
-- reject if not valid
+**Note** The website will not manage, edit or tamper with the github code in any form. The user must manually make changes, whatever it may be.
 
-Fetch data from Github API (token stored in .env)
-- PR title
-- PR description/body
-- Number of files changed
-- Lines added
-- Lines deleted
-- File names
-- Diff summary (text)
+## The Data Flow **#TODO**
 
-Normalize data: before sending to ML
-- example
+### Input
+### Transformation
+### Inference
+### Output
+
+## Techinal Specification
+
+### Sytem Architectural Design
+
+- Frontend: React
+- Backend: FastAPI
+- ML Layer: Embedded in the backend
+
+### API contract
+
+Ultimately, what frontend sends as input and expects what output from the backend.
+
+request body(`JSON`):
 ```
 {
-  "title": "...",
-  "description_length": 340,
-  "files_changed": 5,
-  "lines_added": 120,
-  "lines_deleted": 40,
-  ...
-}
-```
-ML model response:
-- ML model already exists (I'll create it)
-
-```
-{
-  "risk_score": 0.72,
-  "risk_label": "HIGH"
+"PR_URL": "..."
 }
 ```
 
-your job:
-- Pass metadata exactly as required
-- Capture output
-- Do not interpret results
-
-LLM request:
-Generate risk suggestions using 
-- repo context
-- PR summary 
-- ML response
-
-input to LLM
+response body(`JSON`): 
 ```
 {
-  "risk_label": "HIGH",
-  "risk_score": 0.72,
-  "pr_summary": "...",
-  "diff_summary": "..."
-}
-```
-Output from LLM
-```
-{
-  "review_comments": "This PR introduces risky changes..."
-}
-
-```
-
-Final response to frontend
-format:
-```
-{
-  "risk_label": "HIGH",
-  "risk_score": 0.72,
-  "review_comments": "..."
+"risk_score": 123,
+"prediction": "...",
+"suggestions": "..."
+""
 }
 ```
 
-Need to desin how to show this in frontend
+### Database Schema 
+refer to schemas folder for database schema.
+No database scheme needed for backend.  
+For ML
 
-### Error handling
-- invalid URL              - 500
-- API failure              - 502
-- ML model request failure - 500
-- LLM failure              - 500
+## Machine Learning
 
+## ML Model
 
-### Data Flow
+Model to predict the score factor of merging PRs.
 
-Frontend
-  ↓
-/analyze-pr (PR URL)
-  ↓
-GitHub API → normalize metadata
-  ↓
-/ml/predict
-  ↓
-/llm/generate-review
-  ↓
-Frontend
+- Model: Random Forest Classifier
+- Training Label(Y): Is_risky: if pr > 5 review cycles
+- ML Input(X): PR Metadata. 
+- ML Output: Risk_score(0-10), top_5_contributing_factors
 
-#TODO: Design request and respose schemas
+`Heuristic baseline: is there an existing system? Yes, but only available in Tech Companys as internal tools. Didn't find any tools on the internet`
+
+Input: Features from the PR using github API  
+Output: Risk_score and top_risk_factors
+
+## LLM
+
+Repo context fed to LLM.
+- The Diff - Actual lines changed.
+- related files - If user.js, fetch names of files which imports or uses user.js.
+- recent commit messages - fetch last 5 commit messages for modified files.
+- contrubution/contributing.md - if the repo has any standards, let the LLM know.
+
+- LLM Input: ML risk factors, score, code diff, related file names, 3 or 5 commit messages.
+- LLM Output:
+    1) Explanation of risk
+    2) Mitigation Strategy
+    3) refactored code snippet (If necessary)
+
+### Dependencies
+
+This project uses pdm to manage dependecies. You can use `pdm list` to check the packages.
+A seperate requirements.txt file will be made after the completion of the project.
