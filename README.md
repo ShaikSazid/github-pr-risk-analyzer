@@ -30,7 +30,7 @@ Our tool leverages repository context and historical patterns to quantify the ri
 
 ### Sytem Architectural Design
 
-- Frontend: ~~To be decided~~ **#TODO**
+- Frontend: React
 - Backend: FastAPI
 - ML Layer: Embedded in the backend
 
@@ -55,10 +55,10 @@ response body(`JSON`):
 }
 ```
 
-### Database Schema **#TODO**
-
+### Database Schema 
+refer to schemas folder for database schema.
 No database scheme needed for backend.  
-For ML ~~ To Be Decided ~~
+For ML
 
 ## Machine Learning
 
