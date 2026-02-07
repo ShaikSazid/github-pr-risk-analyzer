@@ -67,7 +67,7 @@ For ML
 Model to predict the score factor of merging PRs.
 
 - Model: Random Forest Classifier
-- Training Label(Y): Is_risky: if pr > 5 review cycles
+- Training Label(Y): Is_risky: if (hours_to_merge > 70) | (review_comments_count >= 3) | (issue_comments_count >= 5)
 - ML Input(X): PR Metadata. 
 - ML Output: Risk_score(0-10), top_5_contributing_factors
 

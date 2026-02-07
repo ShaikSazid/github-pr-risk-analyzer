@@ -1,0 +1,12 @@
+PyGithub
+pandas
+python-dotenv
+numpy
+fastapi[standard]
+uvicorn
+httpx
+ipykernel
+scikit-learn
+google-generativeai
+scikit-learn
+joblib

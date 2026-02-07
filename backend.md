@@ -58,7 +58,7 @@ ML model response:
 
 ```
 {
-  "risk_score": 0.72,
+  "risk_score": 7.2,
   "risk_label": "HIGH"
 }
 ```
@@ -78,7 +78,7 @@ input to LLM
 ```
 {
   "risk_label": "HIGH",
-  "risk_score": 0.72,
+  "risk_score":  7.2,
   "pr_summary": "...",
   "diff_summary": "..."
 }
@@ -96,7 +96,7 @@ format:
 ```
 {
   "risk_label": "HIGH",
-  "risk_score": 0.72,
+  "risk_score": 7.2,
   "review_comments": "..."
 }
 ```
