@@ -1,76 +1,158 @@
+# backend/app/api/v1/analyze.py
+
 import logging
+from datetime import datetime
+from typing import Dict, List
 
 from fastapi import APIRouter
-from schemas.request import AnalyzePRRequest
-from schemas.response import AnalyzePRResponse
-from services.github_service import (
-    fetch_contributing,
+
+from backend.app.schemas.request import AnalyzePRRequest
+from backend.app.schemas.response import AnalyzePRResponse
+
+from backend.app.services.github_service import (
     fetch_pr,
     fetch_pr_files,
     fetch_recent_commits,
+    fetch_contributing,
 )
-from services.llm_service import generate_review
-from services.ml_service import predict_risk
-from utils.diff_utils import (
+
+from backend.app.services.ml_service import predict_risk
+from backend.app.services.llm_service import generate_review
+
+from backend.app.utils.diff_utils import (
     build_diff_summary,
     extract_patch_text,
     limit_diff_text,
 )
-from utils.pr_parser import parse_pr_url
+
+from backend.app.utils.pr_parser import parse_pr_url
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/analyze/pr", response_model=AnalyzePRResponse)
-async def analyze_pr(request: AnalyzePRRequest):
-    logger.info("request received")
+# -------------------------------------------------------
+# Helper: Safe datetime parsing
+# -------------------------------------------------------
+def parse_github_datetime(dt_str: str | None) -> datetime | None:
+    if not dt_str:
+        return None
+    try:
+        return datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+    except Exception:
+        return None
 
-    owner, repo, pr_number = parse_pr_url(str(request.pr_url))
-    logger.info("parsed pr url", extra={"owner": owner, "repo": repo, "pr": pr_number})
 
-    pr = await fetch_pr(owner, repo, pr_number)
-    logger.info("fetched pr metadata")
+# -------------------------------------------------------
+# Build ML Input (RAW CONTRACT FOR ML)
+# -------------------------------------------------------
+def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
+    """
+    Prepare raw metadata for ML layer.
+    This matches exactly what ml/apis/predict.py expects.
+    """
 
-    files = await fetch_pr_files(owner, repo, pr_number)
-    logger.info("fetched pr files", extra={"file_count": len(files)})
+    pr_created = parse_github_datetime(pr.get("created_at"))
 
-    recent_commits = await fetch_recent_commits(owner, repo)
-    logger.info("fetched recent commits", extra={"count": len(recent_commits)})
+    # -------- Author Account Age --------
+    user_created = parse_github_datetime(
+        pr.get("user", {}).get("created_at")
+    )
 
-    contributing = await fetch_contributing(owner, repo)
-    if contributing:
-        logger.info("fetched contributing guidelines")
+    if pr_created and user_created:
+        author_account_age_days = (pr_created - user_created).days
     else:
-        logger.info("no contributing guidelines found")
+        author_account_age_days = 0
 
-    diff_summary = build_diff_summary(files)
-    diff_text = extract_patch_text(files)
-    diff_text = limit_diff_text(diff_text)
+    # -------- Labels --------
+    labels_list = pr.get("labels") or []
+    labels = ", ".join(label.get("name", "") for label in labels_list) if labels_list else "none"
 
-    logger.info("built diff summary", extra=diff_summary)
+    # -------- Milestone --------
+    milestone = pr.get("milestone", {})
+    milestone_title = milestone.get("title") if milestone else "none"
+    milestone_title = milestone_title or "none"
 
-    ml_input = {
-        **diff_summary,
-        "title_length": len(pr.get("title", "")),
-        "description_length": len(pr.get("body") or ""),
+    # -------- File Extensions --------
+    extensions = {
+        f.get("filename", "").rsplit(".", 1)[-1]
+        for f in files
+        if "." in f.get("filename", "")
+    }
+    file_extensions = ", ".join(extensions) if extensions else "none"
+
+    # -------- Requested Reviewers --------
+    requested_reviewers = pr.get("requested_reviewers") or []
+    reviewers_count = len(requested_reviewers)
+
+    # -------- Final ML Input --------
+    return {
+        "is_draft": pr.get("draft", False),
+        "author_account_age_days": author_account_age_days,
+        "additions": pr.get("additions", 0),
+        "deletions": pr.get("deletions", 0),
+        "changed_files": pr.get("changed_files", 0),
+        "commits_count": pr.get("commits", 0),
+        "body": pr.get("body"),
+        "title": pr.get("title", ""),
+        "labels": labels,
+        "milestone": milestone_title,
+        "file_extensions": file_extensions,
+        "created_day_of_week": pr_created.weekday() if pr_created else 0,
+        "created_hour": pr_created.hour if pr_created else 0,
+        "requested_reviewers_count": reviewers_count,
+        "author_association": pr.get("author_association", "NONE"),
     }
 
-    ml_result = await predict_risk(ml_input)
-    logger.info("ml inference completed", extra=ml_result)
 
+# -------------------------------------------------------
+# Main Endpoint
+# -------------------------------------------------------
+@router.post("/analyze/pr", response_model=AnalyzePRResponse)
+async def analyze_pr(request: AnalyzePRRequest):
+
+    logger.info("Analyze PR request received")
+
+    owner, repo, pr_number = parse_pr_url(str(request.pr_url))
+
+    # ---------------- GitHub Fetch ----------------
+    pr = await fetch_pr(owner, repo, pr_number)
+    logger.info(f"GitHub PR fields: {list(pr.keys())}")
+    files = await fetch_pr_files(owner, repo, pr_number)
+    recent_commits = await fetch_recent_commits(owner, repo)
+    contributing = await fetch_contributing(owner, repo)
+
+    # ---------------- Diff Context ----------------
+    diff_summary = build_diff_summary(files)
+    diff_text = limit_diff_text(extract_patch_text(files))
+
+    # ---------------- ML Layer ----------------
+    ml_input = build_ml_input(pr, files)
+    logger.info(f"ML INPUT: {list(ml_input.keys())}")
+
+    ml_result = await predict_risk(ml_input)
+
+    logger.info(f"ML OUTPUT: {ml_result}")
+
+    # ---------------- LLM Layer ----------------
     llm_context = {
-        "pr_summary": pr["title"],
+        "risk_label": ml_result["risk_label"],
+        "risk_score": ml_result["risk_score"],
+        "top_risk_factors": ml_result.get("top_risk_factors", []),
+
+        "title": pr["title"],
+        "body": pr["body"],
+        "file_names": [f["filename"] for f in files],
         "diff_summary": diff_summary,
-        "diff_text": diff_text,
         "recent_commits": recent_commits,
         "contributing_guidelines": contributing,
-        **ml_result,
     }
 
     review = await generate_review(llm_context)
-    logger.info("llm review generated")
 
+    logger.info(f"LLM review generated: {review}")
+
+    # ---------------- Final Response ----------------
     return AnalyzePRResponse(
         risk_label=ml_result["risk_label"],
         risk_score=ml_result["risk_score"],

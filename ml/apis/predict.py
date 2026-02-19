@@ -10,10 +10,12 @@ MODEL_DIR = BASE_DIR / "ml" / "models"
 _model = None
 _feature_columns = None
 
-def _load_model(): 
-  global _model, _feature_columns
-  _model = joblib.load(MODEL_DIR, "rf_model.joblib")
-  _feature_columns = joblib.load(MODEL_DIR, "feature_columns.joblib")
+def _load_model():
+    global _model, _feature_columns
+
+    if _model is None:
+        _model = joblib.load(MODEL_DIR / "rf_model.joblib")
+        _feature_columns = joblib.load(MODEL_DIR / "feature_columns.joblib")
 
 def prepare_features(pr_data: dict) -> dict:
   """
@@ -65,7 +67,7 @@ def prepare_features(pr_data: dict) -> dict:
     "has_labels": int(labels != "none"),
     "has_milestone": int(milestone != "none"),
     "has_file_extensions": int(file_extensions != "none"),
-    "author_association_encoded": author_assoc_encoded,
+    "author_association_encoded": author_assoc_en,
   }
 
   return features
@@ -79,14 +81,14 @@ def predict_risk(pr_features: dict) -> dict:
   df = pd.DataFrame([pr_features])[_feature_columns]
 
   prob = _model.predict_proba(df)[0][1]
-  risk_score = round(prob * 10, 1)
+  risk_score = float(round(prob * 10, 1))
 
   if risk_score <= 3:
-    risk_lable = "LOW"
+    risk_label = "LOW"
   elif risk_score <= 6:
-    risk_lable = "MEDIUM"
+    risk_label = "MEDIUM"
   else:
-    risk_lable = "HIGH"
+    risk_label = "HIGH"
 
   # top factors 
   importances = sorted(
@@ -98,7 +100,7 @@ def predict_risk(pr_features: dict) -> dict:
   top_factors = [ n for n, _ in importances[:5]] # because we need top 5
 
   return {
-    "risk_score": risk_score, 
-    "risk_label": risk_lable,
+    "risk_score": float(risk_score), 
+    "risk_label": risk_label,
     "top_risk_factors": top_factors
   }

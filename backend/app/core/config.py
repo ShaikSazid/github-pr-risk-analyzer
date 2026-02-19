@@ -5,6 +5,7 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 
 class Settings(BaseSettings):
     GITHUB_TOKEN: str = ""
+    GEMINI_API_KEY: str
     ENV: str = "development"
     LOG_LEVEL: str = "INFO"
 

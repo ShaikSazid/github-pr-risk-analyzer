@@ -1,7 +1,7 @@
 import re
 from typing import Tuple
 
-from core.exceptions import InvalidPullRequestURLError
+from backend.app.core.exceptions import InvalidPullRequestURLError
 
 PR_REGEX = re.compile(
     r"^https://github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)/pull/(?P<number>\d+)$"

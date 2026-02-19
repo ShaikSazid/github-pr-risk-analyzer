@@ -1,8 +1,9 @@
-import base64
+# backend/app/services/github_service.py
 
+import base64
 import httpx
-from core.config import settings
-from core.exceptions import GitHubAPIError
+from backend.app.core.config import settings
+from backend.app.core.exceptions import GitHubAPIError
 
 BASE_URL = "https://api.github.com"
 
@@ -17,40 +18,35 @@ def _headers():
     }
 
 
-async def fetch_pr(owner: str, repo: str, pr_number: int):
+async def _get(url: str):
+    """Reusable GET helper with consistent error handling"""
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(url, headers=_headers())
+
+    if response.status_code != 200:
+        raise GitHubAPIError(
+            f"GitHub API error ({response.status_code}): {response.text}"
+        )
+
+    return response.json()
+
+
+async def fetch_pr(owner: str, repo: str, pr_number: int) -> dict:
     url = f"{BASE_URL}/repos/{owner}/{repo}/pulls/{pr_number}"
-
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        r = await client.get(url, headers=_headers())
-
-    if r.status_code != 200:
-        raise GitHubAPIError(r.text)
-
-    return r.json()
+    return await _get(url)
 
 
-async def fetch_pr_files(owner: str, repo: str, pr_number: int):
+async def fetch_pr_files(owner: str, repo: str, pr_number: int) -> list[dict]:
     url = f"{BASE_URL}/repos/{owner}/{repo}/pulls/{pr_number}/files"
-
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        r = await client.get(url, headers=_headers())
-
-    if r.status_code != 200:
-        raise GitHubAPIError(r.text)
-
-    return r.json()
+    return await _get(url)
 
 
-async def fetch_recent_commits(owner: str, repo: str, limit: int = 5) -> list[str]:
+async def fetch_recent_commits(
+    owner: str, repo: str, limit: int = 5
+) -> list[str]:
     url = f"{BASE_URL}/repos/{owner}/{repo}/commits"
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        r = await client.get(url, headers=_headers())
-
-    if r.status_code != 200:
-        raise GitHubAPIError(r.text)
-
-    commits = r.json()
+    commits = await _get(url)
     messages = []
 
     for commit in commits[:limit]:
@@ -70,10 +66,10 @@ async def fetch_contributing(owner: str, repo: str) -> str | None:
     async with httpx.AsyncClient(timeout=10.0) as client:
         for path in paths:
             url = f"{BASE_URL}/repos/{owner}/{repo}/contents/{path}"
-            r = await client.get(url, headers=_headers())
+            response = await client.get(url, headers=_headers())
 
-            if r.status_code == 200:
-                content = r.json().get("content")
+            if response.status_code == 200:
+                content = response.json().get("content")
                 if content:
                     return base64.b64decode(content).decode("utf-8")
 
