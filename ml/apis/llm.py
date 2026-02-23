@@ -1,5 +1,3 @@
-# ml/apis/llm.py
-
 import logging
 import time
 from typing import Dict
@@ -31,7 +29,6 @@ def _fallback(risk_output: Dict) -> Dict:
             "Validate security implications",
         ],
         "code_suggestions": [],
-        "dependencies": [],
         "source": "fallback",
     }
 
@@ -55,39 +52,48 @@ Pull Request Details:
 {chr(10).join(pr_context.get("commit_messages", []))}
 
 Instructions:
-1. You MUST return output strictly in valid JSON.
-2. Do NOT include markdown, explanations, or extra text outside JSON.
+1. You MUST return strictly valid JSON.
+2. Do NOT include markdown, explanations, or text outside JSON.
 3. Follow the schema exactly.
 4. For code_suggestions:
-   - If the issue is minor (syntax, naming, small semantic issues), provide plain text suggestions.
-   - If the issue is major (logic flaws, architectural risks, security issues, algorithm errors), provide a short code snippet showing the improved version.
+   - Use "type": "text" for plain explanations.
+   - Use "type": "code" ONLY when providing actual code.
+   - If type is "code", you MUST include a valid "language" field.
+   - Use proper language names such as "go", "python", "javascript", "java", etc.
+   - NEVER use "plain text" as a type value.
 5. Keep suggestions concise and actionable.
-6. Base your reasoning on the provided PR context and risk factors.
+6. Base reasoning only on the provided PR context.
 """
 
     schema = {
         "type": "object",
         "properties": {
             "risk_explanation": {"type": "string"},
-            "mitigation_steps": {"type": "array", "items": {"type": "string"}},
+            "mitigation_steps": {
+                "type": "array",
+                "items": {"type": "string"},
+            },
             "code_suggestions": {
                 "type": "array",
                 "items": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string"},  # "text" or "code"
+                        "type": {
+                            "type": "string",
+                            "enum": ["text", "code"]
+                        },
                         "content": {"type": "string"},
                         "language": {"type": "string"},
                     },
-                    "required": ["type", "content"]
+                    "required": ["type", "content"],
                 },
             },
         },
-        "required": {
+        "required": [
             "risk_explanation",
             "mitigation_steps",
             "code_suggestions",
-        },
+        ],
     }
 
     for attempt in range(1, MAX_RETRIES + 1):
@@ -123,7 +129,7 @@ Instructions:
             logger.warning(f"Attempt {attempt} failed: {e}")
 
         if attempt < MAX_RETRIES:
-            sleep_time = 2**attempt
+            sleep_time = 2 ** attempt
             logger.info(f"Retrying in {sleep_time}s...")
             time.sleep(sleep_time)
 
