@@ -45,6 +45,7 @@ function App() {
           loading={loading}
           error={error}
           onReset={reset}
+          aiUnavailable={data?.ai_unavailable}
         />
 
         {/* Results - Only show if data exists */}

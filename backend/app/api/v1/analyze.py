@@ -6,6 +6,7 @@ from typing import Dict, List
 
 from fastapi import APIRouter
 
+from backend.app.core.exceptions import MLServiceError
 from backend.app.schemas.request import AnalyzePRRequest
 from backend.app.schemas.response import AnalyzePRResponse
 
@@ -116,8 +117,12 @@ async def analyze_pr(request: AnalyzePRRequest):
     ml_input = build_ml_input(pr, files)
     logger.info(f"ML INPUT KEYS: {list(ml_input.keys())}")
 
-    ml_result = await predict_risk(ml_input)
-    logger.info(f"ML OUTPUT: {ml_result}")
+    try:
+        ml_result = await predict_risk(ml_input)
+        logger.info(f"ML OUTPUT: {ml_result}")
+    except Exception as e:
+        logger.error(f"ML prediction failed: {e}")
+        raise MLServiceError("ML prediction failed.")
 
     # ---------------- Selective Diff (Free-Tier Safe) ----------------
     selected_patch = build_selected_patch(
@@ -136,7 +141,7 @@ async def analyze_pr(request: AnalyzePRRequest):
         "file_names": [f.get("filename") for f in files],
 
         # 🔥 Diff-aware reasoning (added lines only)
-        "selected_patch": selected_patch,
+        "diff_summary": selected_patch,
     }
 
     review = await generate_review(llm_context)
@@ -144,8 +149,10 @@ async def analyze_pr(request: AnalyzePRRequest):
     logger.info(f"LLM OUTPUT: {review}")
 
     # ---------------- Final Response ----------------
-    return AnalyzePRResponse(
-        risk_label=ml_result["risk_label"],
-        risk_score=ml_result["risk_score"],
-        review_comments=review,
-    )
+    return {
+    "risk_label": ml_result["risk_label"],
+    "risk_score": ml_result["risk_score"],
+    "review_comments": review,
+    "pr_url": str(request.pr_url),
+    "ai_unavailable": review.get("source") == "fallback"
+}

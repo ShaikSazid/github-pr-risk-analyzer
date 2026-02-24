@@ -323,8 +323,15 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
     logger.error("LLM failed after retries")
 
     return {
-        "risk_explanation": "LLM validation failed. Manual review recommended.",
-        "mitigation_steps": ["Perform manual review."],
-        "file_reviews": [],
-        "source": "fallback"
-    }
+    "risk_explanation": (
+        "AI review is temporarily unavailable. "
+        "Risk assessment is still provided, but detailed code analysis "
+        "could not be generated at this time."
+    ),
+    "mitigation_steps": [
+        "Please review the pull request manually.",
+        "Try again later if AI analysis is required."
+    ],
+    "file_reviews": [],
+    "source": "fallback"
+}

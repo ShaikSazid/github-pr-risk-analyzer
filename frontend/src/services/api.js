@@ -10,16 +10,39 @@ const api = axios.create({
 })
 
 api.interceptors.response.use(
-  (response) => {
-    console.log('✅ API Response:', response.data)  // ← Add this
-    return response
-  },
+  (response) => response,
   (error) => {
-    console.error('❌ API Error:', error)
+    // Timeout
     if (error.code === 'ECONNABORTED') {
-      throw new Error('Request timeout. The analysis took too long. Please try again.')
+      throw new Error("The analysis took too long. Please try again.")
     }
-    throw new Error(error.message || 'An unexpected error occurred')
+
+    // Backend structured errors
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message)
+    }
+
+    // FastAPI validation errors (422)
+    if (error.response?.status === 422 && error.response?.data?.detail) {
+      return Promise.reject(
+        new Error(
+          "Invalid GitHub Pull Request URL. Please use format: https://github.com/owner/repo/pull/123"
+        )
+      )
+    }
+
+    // GitHub 404 (PR not found)
+    if (error.response?.status === 502) {
+      return Promise.reject(
+        new Error(
+          "Pull Request not found or repository is private."
+        )
+      )
+    }
+
+    return Promise.reject(
+      new Error("Something went wrong. Please try again.")
+    )
   }
 )
 
@@ -27,7 +50,6 @@ export const analyzePR = async (prUrl) => {
   const response = await api.post('/api/v1/analyze/pr', {
     pr_url: prUrl,
   })
-  console.log('📦 Full response data:', response.data)  // ← Add this
   return response.data
 }
 

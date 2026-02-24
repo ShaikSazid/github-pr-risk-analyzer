@@ -220,12 +220,6 @@ export function ResultsPanel({ results }) {
             </h1>
             <p className="text-slate-500 mt-2 font-medium">Deep inspection and mitigation strategy for active PR.</p>
         </div>
-        
-        <div className="flex gap-3 animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <a href={prUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200">
-                Open in Repository <ArrowRight size={14} />
-            </a>
-        </div>
       </header>
 
       {/* Stats Grid */}
@@ -254,7 +248,7 @@ export function ResultsPanel({ results }) {
                       Executive Summary
                     </h3>
                     <p className="text-slate-700 text-[15px] font-semibold leading-relaxed italic">
-                      "{riskExplanation}"
+                      {riskExplanation}
                     </p>
                   </div>
                 </div>
@@ -306,10 +300,6 @@ export function ResultsPanel({ results }) {
           </Section>
         )}
       </div>
-
-      <footer className="text-center pt-8 pb-12 border-t border-slate-100 animate-fade-in">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Internal Security Review Tool v2.0</p>
-      </footer>
     </div>
   )
 }

@@ -19,16 +19,32 @@ def _headers():
 
 
 async def _get(url: str):
-    """Reusable GET helper with consistent error handling"""
+    """Reusable GET helper with clean error mapping"""
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.get(url, headers=_headers())
 
-    if response.status_code != 200:
+    # SUCCESS
+    if response.status_code == 200:
+        return response.json()
+
+    # NOT FOUND
+    if response.status_code == 404:
+        raise GitHubAPIError("Pull request not found.")
+
+    # FORBIDDEN
+    if response.status_code == 403:
+        if "rate limit" in response.text.lower():
+            raise GitHubAPIError(
+                "GitHub rate limit reached. Please try again later."
+            )
         raise GitHubAPIError(
-            f"GitHub API error ({response.status_code}): {response.text}"
+            "This repository is private or not accessible."
         )
 
-    return response.json()
+    # OTHER ERRORS
+    raise GitHubAPIError(
+        "Unable to fetch data from GitHub. Please try again."
+    )
 
 
 async def fetch_pr(owner: str, repo: str, pr_number: int) -> dict:

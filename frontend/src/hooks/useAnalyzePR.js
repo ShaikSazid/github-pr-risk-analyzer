@@ -10,11 +10,12 @@ export function useAnalyzePR() {
     try {
       setLoading(true)
       setError(null)
+
       const result = await analyzePR(prUrl)
       setData(result)
+
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Analysis failed'
-      setError(errorMessage)
+      setError(err.message)
       setData(null)
     } finally {
       setLoading(false)

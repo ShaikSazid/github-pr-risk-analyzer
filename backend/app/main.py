@@ -1,16 +1,16 @@
-import uvicorn
+import logging
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from backend.app.api.v1.analyze import router as analyze_router
+from backend.app.health import router as health_router
 from backend.app.core.exceptions import (
     ApplicationError,
     GitHubAPIError,
     InvalidPullRequestURLError,
+    MLServiceError,
 )
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from backend.app.health import router as health_router
-
-import logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,15 +32,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --------------------------------------------------
+# Specific Error Handlers
+# --------------------------------------------------
 
 @app.exception_handler(GitHubAPIError)
-async def github_api_exception_handler(request: Request, exc: GitHubAPIError):
+async def github_error_handler(request: Request, exc: GitHubAPIError):
     return JSONResponse(
-        status_code=502,
-        content={
-            "message": "GitHub API Error",
-            "detail": str(exc),
-        },
+        status_code=400,
+        content={"message": exc.message},
     )
 
 
@@ -48,9 +48,16 @@ async def github_api_exception_handler(request: Request, exc: GitHubAPIError):
 async def invalid_pr_handler(request: Request, exc: InvalidPullRequestURLError):
     return JSONResponse(
         status_code=400,
+        content={"message": "Invalid Pull Request URL."},
+    )
+
+
+@app.exception_handler(MLServiceError)
+async def ml_service_handler(request: Request, exc: MLServiceError):
+    return JSONResponse(
+        status_code=500,
         content={
-            "message": "Invalid Pull Request URL",
-            "detail": str(exc),
+            "message": "Risk prediction service is temporarily unavailable. Please try again later."
         },
     )
 
@@ -59,15 +66,10 @@ async def invalid_pr_handler(request: Request, exc: InvalidPullRequestURLError):
 async def application_error_handler(request: Request, exc: ApplicationError):
     return JSONResponse(
         status_code=500,
-        content={
-            "message": "Application Error",
-            "detail": str(exc),
-        },
+        content={"message": "Unexpected server error. Please try again later."},
     )
 
+# --------------------------------------------------
 
 app.include_router(health_router)
 app.include_router(analyze_router, prefix="/api/v1")
-
-# if __name__ == "__main__":
-#     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
