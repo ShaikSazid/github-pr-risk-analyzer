@@ -12,20 +12,14 @@ from backend.app.schemas.response import AnalyzePRResponse
 from backend.app.services.github_service import (
     fetch_pr,
     fetch_pr_files,
-    fetch_recent_commits,
-    fetch_contributing,
 )
 
 from backend.app.services.ml_service import predict_risk
 from backend.app.services.llm_service import generate_review
-
-from backend.app.utils.diff_utils import (
-    build_diff_summary,
-    extract_patch_text,
-    limit_diff_text,
-)
+from backend.app.services.diff_selector import build_selected_patch
 
 from backend.app.utils.pr_parser import parse_pr_url
+
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -44,12 +38,12 @@ def parse_github_datetime(dt_str: str | None) -> datetime | None:
 
 
 # -------------------------------------------------------
-# Build ML Input (RAW CONTRACT FOR ML)
+# Build ML Input
 # -------------------------------------------------------
 def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
     """
     Prepare raw metadata for ML layer.
-    This matches exactly what ml/apis/predict.py expects.
+    Must match ml/apis/predict.py contract.
     """
 
     pr_created = parse_github_datetime(pr.get("created_at"))
@@ -85,7 +79,6 @@ def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
     requested_reviewers = pr.get("requested_reviewers") or []
     reviewers_count = len(requested_reviewers)
 
-    # -------- Final ML Input --------
     return {
         "is_draft": pr.get("draft", False),
         "author_account_age_days": author_account_age_days,
@@ -117,40 +110,38 @@ async def analyze_pr(request: AnalyzePRRequest):
 
     # ---------------- GitHub Fetch ----------------
     pr = await fetch_pr(owner, repo, pr_number)
-    logger.info(f"GitHub PR fields: {list(pr.keys())}")
     files = await fetch_pr_files(owner, repo, pr_number)
-    recent_commits = await fetch_recent_commits(owner, repo)
-    contributing = await fetch_contributing(owner, repo)
-
-    # ---------------- Diff Context ----------------
-    diff_summary = build_diff_summary(files)
-    diff_text = limit_diff_text(extract_patch_text(files))
 
     # ---------------- ML Layer ----------------
     ml_input = build_ml_input(pr, files)
-    logger.info(f"ML INPUT: {list(ml_input.keys())}")
+    logger.info(f"ML INPUT KEYS: {list(ml_input.keys())}")
 
     ml_result = await predict_risk(ml_input)
-
     logger.info(f"ML OUTPUT: {ml_result}")
 
-    # ---------------- LLM Layer ----------------
+    # ---------------- Selective Diff (Free-Tier Safe) ----------------
+    selected_patch = build_selected_patch(
+        files_data=files,
+        risk_score=ml_result["risk_score"],
+    )
+
+    # ---------------- LLM Context ----------------
     llm_context = {
         "risk_label": ml_result["risk_label"],
         "risk_score": ml_result["risk_score"],
         "top_risk_factors": ml_result.get("top_risk_factors", []),
 
-        "title": pr["title"],
-        "body": pr["body"],
-        "file_names": [f["filename"] for f in files],
-        "diff_summary": diff_summary,
-        "recent_commits": recent_commits,
-        "contributing_guidelines": contributing,
+        "title": pr.get("title", ""),
+        "body": pr.get("body", ""),
+        "file_names": [f.get("filename") for f in files],
+
+        # 🔥 Diff-aware reasoning (added lines only)
+        "selected_patch": selected_patch,
     }
 
     review = await generate_review(llm_context)
 
-    logger.info(f"LLM review generated: {review}")
+    logger.info(f"LLM OUTPUT: {review}")
 
     # ---------------- Final Response ----------------
     return AnalyzePRResponse(

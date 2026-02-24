@@ -2,34 +2,22 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-class CodeSuggestion(BaseModel):
-    type: str = Field(
-        ...,
-        description="Type of suggestion: 'text' or 'code'"
-    )
-    content: str = Field(
-        ...,
-        description="Suggestion content"
-    )
-    language: Optional[str] = Field(
-        default=None,
-        description="Programming language if suggestion is code"
-    )
+class Issue(BaseModel):
+    description: str
+    code_example: Optional[str] = None
+    language: Optional[str] = None
+
+
+class FileReview(BaseModel):
+    file: str
+    issues: List[Issue]
 
 
 class LLMReview(BaseModel):
-    risk_explanation: str = Field(
-        ...,
-        example="This PR modifies critical authentication logic."
-    )
-    mitigation_steps: List[str] = Field(
-        default_factory=list,
-        example=["Add unit tests", "Request senior review"]
-    )
-    code_suggestions: List[CodeSuggestion] = Field(
-        default_factory=list
-    )
-    source: Optional[str] = None  # supports llm / fallback
+    risk_explanation: str
+    mitigation_steps: List[str]
+    file_reviews: List[FileReview]
+    source: Optional[str] = None
 
 
 class AnalyzePRResponse(BaseModel):
