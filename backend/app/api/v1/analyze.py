@@ -1,5 +1,3 @@
-# backend/app/api/v1/analyze.py
-
 import logging
 from datetime import datetime
 from typing import Dict, List
@@ -25,10 +23,8 @@ from backend.app.utils.pr_parser import parse_pr_url
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-
-# -------------------------------------------------------
 # Helper: Safe datetime parsing
-# -------------------------------------------------------
+
 def parse_github_datetime(dt_str: str | None) -> datetime | None:
     if not dt_str:
         return None
@@ -37,10 +33,8 @@ def parse_github_datetime(dt_str: str | None) -> datetime | None:
     except Exception:
         return None
 
-
-# -------------------------------------------------------
 # Build ML Input
-# -------------------------------------------------------
+
 def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
     """
     Prepare raw metadata for ML layer.
@@ -99,9 +93,6 @@ def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
     }
 
 
-# -------------------------------------------------------
-# Main Endpoint
-# -------------------------------------------------------
 @router.post("/analyze/pr", response_model=AnalyzePRResponse)
 async def analyze_pr(request: AnalyzePRRequest):
 
@@ -109,11 +100,9 @@ async def analyze_pr(request: AnalyzePRRequest):
 
     owner, repo, pr_number = parse_pr_url(str(request.pr_url))
 
-    # ---------------- GitHub Fetch ----------------
     pr = await fetch_pr(owner, repo, pr_number)
     files = await fetch_pr_files(owner, repo, pr_number)
 
-    # ---------------- ML Layer ----------------
     ml_input = build_ml_input(pr, files)
     logger.info(f"ML INPUT KEYS: {list(ml_input.keys())}")
 
@@ -124,13 +113,11 @@ async def analyze_pr(request: AnalyzePRRequest):
         logger.error(f"ML prediction failed: {e}")
         raise MLServiceError("ML prediction failed.")
 
-    # ---------------- Selective Diff (Free-Tier Safe) ----------------
     selected_patch = build_selected_patch(
         files_data=files,
         risk_score=ml_result["risk_score"],
     )
 
-    # ---------------- LLM Context ----------------
     llm_context = {
         "risk_label": ml_result["risk_label"],
         "risk_score": ml_result["risk_score"],
@@ -139,8 +126,6 @@ async def analyze_pr(request: AnalyzePRRequest):
         "title": pr.get("title", ""),
         "body": pr.get("body", ""),
         "file_names": [f.get("filename") for f in files],
-
-        # 🔥 Diff-aware reasoning (added lines only)
         "diff_summary": selected_patch,
     }
 

@@ -6,12 +6,9 @@ import { useAnalyzePR } from './hooks/useAnalyzePR'
 function App() {
   const { analyze, data, loading, error, reset } = useAnalyzePR()
 
-  console.log('🔍 Current data in App:', data)  // ← Add this to debug
-
   return (
     <Layout>
       <div className="max-w-5xl mx-auto space-y-8">
-        {/* Hero Section */}
         <div className="text-center space-y-6 animate-fade-in">
           <div className="space-y-4">
             <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -38,8 +35,6 @@ function App() {
             </div>
           </div>
         </div>
-
-        {/* Analyzer */}
         <PRAnalyzer 
           onAnalyze={analyze}
           loading={loading}
@@ -47,8 +42,6 @@ function App() {
           onReset={reset}
           aiUnavailable={data?.ai_unavailable}
         />
-
-        {/* Results - Only show if data exists */}
         {data && (
           <>
             <div className="text-center">

@@ -1,8 +1,4 @@
 import logging
-from backend.app.core.exceptions import (
-    LLMServiceError,
-    LLMQuotaExceededError
-)
 from ml.apis.llm import generate_review as ml_generate_review
 
 logger = logging.getLogger(__name__)

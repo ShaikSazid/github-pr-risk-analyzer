@@ -43,7 +43,6 @@ export function PRAnalyzer({
 
   return (
     <div className="bg-white/60 backdrop-blur-md border border-slate-200/60 rounded-3xl overflow-hidden animate-slide-up shadow-sm">
-      {/* Header */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100 bg-white/40">
         <div className="flex items-center justify-center p-2 bg-white rounded-xl shadow-sm border border-slate-200/60 flex-shrink-0">
           <Github size={18} className="text-slate-600" />
@@ -59,8 +58,6 @@ export function PRAnalyzer({
             Enter a GitHub PR URL to get an instant AI-powered risk assessment
             and code review.
           </p>
-
-          {/* Input + inline validation error */}
           <div className="space-y-2">
             <Input
               type="url"
@@ -72,8 +69,6 @@ export function PRAnalyzer({
               }}
               disabled={loading}
             />
-
-            {/* Inline validation error — minimal, no box, just a dot + text */}
             {localError && (
               <div className="flex items-center gap-2 px-1 animate-fade-in">
                 <div className="w-1 h-1 rounded-full bg-rose-400 flex-shrink-0" />
@@ -95,8 +90,6 @@ export function PRAnalyzer({
               </div>
             )}
           </div>
-
-          {/* Server error card — matches Executive Summary from ResultsPanel */}
           {serverError && (
             <div className="relative animate-slide-up">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500 to-red-500 rounded-[1.5rem] blur opacity-10" />
@@ -125,8 +118,6 @@ export function PRAnalyzer({
               </div>
             </div>
           )}
-
-          {/* Buttons */}
           <div className="flex gap-3 pt-1">
             <button
               type="submit"

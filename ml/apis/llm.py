@@ -15,10 +15,6 @@ MAX_PROMPT_CHARS = 12000
 
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-# ============================================================
-# JSON Schema (STRICT STRUCTURE)
-# ============================================================
-
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -53,10 +49,6 @@ SCHEMA = {
     "required": ["risk_explanation", "mitigation_steps", "file_reviews"],
 }
 
-# ============================================================
-# Utilities
-# ============================================================
-
 def _truncate(text: str, limit: int = 4000) -> str:
     if not text:
         return ""
@@ -66,17 +58,14 @@ def _sanitize_code(code: str) -> str:
     if not code:
         return code
 
-    # Remove markdown fences
     code = re.sub(r"```[\w+-]*\n?", "", code)
     code = code.replace("```", "")
 
-    # Convert literal \n to actual newlines FIRST
     if "\\n" in code:
         code = code.replace("\\n", "\n")
         code = code.replace("\\t", "\t")
         code = code.replace("\\r", "\r")
 
-    # If already well-formatted, just clean and return
     if "\n" in code and code.count("\n") >= 3 and not any(len(line.strip()) > 120 for line in code.split('\n') if line.strip()):
         lines = [line.rstrip() for line in code.split('\n')]
         code = '\n'.join(lines)
@@ -206,10 +195,6 @@ def _validate_structure(result: Dict[str, Any], context: Dict) -> bool:
 
     return True
 
-# ============================================================
-# Prompt Builder
-# ============================================================
-
 def _build_prompt(context: Dict) -> str:
 
     prompt = f"""
@@ -267,9 +252,6 @@ Diff Summary:
 
     return prompt
 
-# ============================================================
-# Main LLM Entry
-# ============================================================
 
 async def generate_review(context: Dict) -> Dict[str, Any]:
 
@@ -285,7 +267,7 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
                 config={
                     "temperature": 0.2,
                     "response_mime_type": "application/json",
-                    "response_schema": SCHEMA,  # RESTORED
+                    "response_schema": SCHEMA, 
                 },
             )
 
@@ -295,13 +277,11 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
             result = dict(response.parsed)
             result["source"] = "llm"
 
-            # Sanitize code (soft fix, no hard rejection)
             for file_review in result.get("file_reviews", []):
                 for issue in file_review.get("issues", []):
                     if issue.get("code_example"):
                         issue["code_example"] = _sanitize_code(issue["code_example"])
 
-            # Strict structural validation only
             if not _validate_structure(result, context):
                 raise ValueError("Structure validation failed")
 

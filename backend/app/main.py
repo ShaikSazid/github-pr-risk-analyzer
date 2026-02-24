@@ -32,9 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --------------------------------------------------
 # Specific Error Handlers
-# --------------------------------------------------
 
 @app.exception_handler(GitHubAPIError)
 async def github_error_handler(request: Request, exc: GitHubAPIError):
@@ -68,8 +66,6 @@ async def application_error_handler(request: Request, exc: ApplicationError):
         status_code=500,
         content={"message": "Unexpected server error. Please try again later."},
     )
-
-# --------------------------------------------------
 
 app.include_router(health_router)
 app.include_router(analyze_router, prefix="/api/v1")

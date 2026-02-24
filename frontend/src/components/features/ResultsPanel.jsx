@@ -16,17 +16,13 @@ import {
   Info
 } from "lucide-react"
 
-/* ============================================================================================================ */
-/* Helpers & Global Styles */
-/* ============================================================================================================ */
-
 const decodeEscapedText = (text = "") => {
   if (!text) return "";
   
   return text
-    .replace(/\\n/g, "\n")     // Handle escaped \n
-    .replace(/\\t/g, "\t")     // Handle escaped \t
-    .replace(/\\r/g, "\r")     // Handle escaped \r
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t")
+    .replace(/\\r/g, "\r")
     .trim()
 }
 
@@ -38,7 +34,6 @@ const normalizeLanguage = (lang) => {
   return supported.includes(lang.toLowerCase()) ? lang.toLowerCase() : "text"
 }
 
-// Custom CSS for modern, sleek scrollbars
 const ScrollbarStyles = () => (
   <style>{`
     .sleek-scrollbar::-webkit-scrollbar {
@@ -64,9 +59,6 @@ const ScrollbarStyles = () => (
   `}</style>
 )
 
-/* ============================================================================================================ */
-/* UI Components */
-/* ============================================================================================================ */
 
 function Section({ icon, title, children, delay = "" }) {
   return (
@@ -178,10 +170,6 @@ function ImprovementItem({ issue }) {
   )
 }
 
-/* ============================================================================================================ */
-/* Main Results Panel */
-/* ============================================================================================================ */
-
 export function ResultsPanel({ results }) {
   const review = results?.review_comments || {}
   const riskExplanation = review.risk_explanation || ""
@@ -208,8 +196,6 @@ export function ResultsPanel({ results }) {
   return (
     <div className="max-w-6xl mx-auto space-y-8 p-6 md:p-12 min-h-screen selection:bg-blue-100">
       <ScrollbarStyles />
-      
-      {/* Header */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
         <div className="animate-fade-in">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-[10px] font-black tracking-widest mb-4 border border-blue-100 uppercase">
@@ -221,8 +207,6 @@ export function ResultsPanel({ results }) {
             <p className="text-slate-500 mt-2 font-medium">Deep inspection and mitigation strategy for active PR.</p>
         </div>
       </header>
-
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 animate-slide-up">
         <StatCard title="Security Risk" value={riskScore.toFixed(1)} color={getRiskColor(riskLabel)} icon={Shield} />
         <StatCard title="Risk Rating" value={riskLabel} color={getRiskColor(riskLabel)} icon={AlertTriangle} />
@@ -231,8 +215,6 @@ export function ResultsPanel({ results }) {
       </div>
 
       <div className="grid grid-cols-1 gap-10">
-
-        {/* Refined Executive Summary (Updated Font Size & Weight) */}
         {riskExplanation && (
            <div className="relative animate-slide-up delay-75 group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-[2.5rem] blur opacity-10"></div>
@@ -255,8 +237,6 @@ export function ResultsPanel({ results }) {
               </div>
            </div>
         )}
-        
-        {/* Mitigation Strategy */}
         {mitigationSteps.length > 0 && (
           <Section delay="delay-150" icon={<AlertTriangle className="text-amber-500" size={18} />} title="Mitigation Strategy">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
@@ -273,8 +253,6 @@ export function ResultsPanel({ results }) {
             </div>
           </Section>
         )}
-
-        {/* File Analysis Section */}
         {fileReviews.length > 0 && (
           <Section delay="delay-300" icon={<Code2 className="text-blue-500" size={18} />} title="File Level Analysis">
             <div className="space-y-12">

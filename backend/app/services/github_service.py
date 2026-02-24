@@ -1,5 +1,3 @@
-# backend/app/services/github_service.py
-
 import base64
 import httpx
 from backend.app.core.config import settings

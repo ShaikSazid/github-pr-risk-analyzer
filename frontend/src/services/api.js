@@ -12,17 +12,14 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Timeout
     if (error.code === 'ECONNABORTED') {
       throw new Error("The analysis took too long. Please try again.")
     }
 
-    // Backend structured errors
     if (error.response?.data?.message) {
       throw new Error(error.response.data.message)
     }
 
-    // FastAPI validation errors (422)
     if (error.response?.status === 422 && error.response?.data?.detail) {
       return Promise.reject(
         new Error(
@@ -31,7 +28,6 @@ api.interceptors.response.use(
       )
     }
 
-    // GitHub 404 (PR not found)
     if (error.response?.status === 502) {
       return Promise.reject(
         new Error(
