@@ -7,6 +7,5 @@ uvicorn
 httpx
 ipykernel
 scikit-learn
-google-generativeai
-scikit-learn
 joblib
+google-genai>=1.63.0
