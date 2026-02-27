@@ -235,7 +235,7 @@ Returns server status.
 ### 1. Clone
 
 ```bash
-git clone https://github.com/your-username/github-pr-risk-analyzer.git
+git clone https://github.com/ShaikSazid/github-pr-risk-analyzer.git
 cd github-pr-risk-analyzer
 ```
 
