@@ -10,274 +10,390 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  ArrowRight,
   FileCode2,
   Zap,
-  Info
+  TrendingUp,
+  CircleDot,
 } from "lucide-react"
 
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
 const decodeEscapedText = (text = "") => {
-  if (!text) return "";
-  
-  return text
-    .replace(/\\n/g, "\n")
-    .replace(/\\t/g, "\t")
-    .replace(/\\r/g, "\r")
-    .trim()
+  if (!text) return ""
+  return text.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r").trim()
 }
 
 const stripMarkdown = (text = "") => text.replace(/\\/g, "").replace(/`/g, "")
 
-const normalizeLanguage = (lang) => {
-  if (!lang) return "text"
-  const supported = ["javascript", "typescript", "python", "go", "java", "json", "yaml", "bash", "cpp", "c"]
-  return supported.includes(lang.toLowerCase()) ? lang.toLowerCase() : "text"
+const LANGUAGE_MAP = {
+  javascript: "javascript", js: "javascript", jsx: "javascript",
+  typescript: "typescript", ts: "typescript", tsx: "typescript",
+  html: "html", htm: "html",
+  css: "css", scss: "css", sass: "css", less: "css",
+  vue: "jsx", svelte: "jsx",
+  python: "python", py: "python",
+  go: "go", golang: "go",
+  java: "java",
+  kotlin: "kotlin", kt: "kotlin",
+  scala: "scala",
+  c: "c",
+  cpp: "cpp", "c++": "cpp", cc: "cpp",
+  csharp: "csharp", cs: "csharp",
+  rust: "rust", rs: "rust",
+  swift: "swift",
+  ruby: "ruby", rb: "ruby",
+  php: "php",
+  bash: "bash", sh: "bash", shell: "bash", zsh: "bash",
+  json: "json",
+  yaml: "yaml", yml: "yaml",
+  toml: "toml",
+  xml: "xml",
+  sql: "sql",
+  graphql: "graphql", gql: "graphql",
+  markdown: "markdown", md: "markdown",
+  dockerfile: "docker",
+  text: "text", txt: "text", code: "text",
 }
 
-const ScrollbarStyles = () => (
+const normalizeLanguage = (lang) => {
+  if (!lang) return "text"
+  return LANGUAGE_MAP[lang.toLowerCase().trim()] || "text"
+}
+
+// ─── Global Styles ────────────────────────────────────────────────────────────
+
+const GlobalStyles = () => (
   <style>{`
-    .sleek-scrollbar::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+    .rp-root { font-family: 'DM Sans', sans-serif; }
+    .rp-mono { font-family: 'JetBrains Mono', monospace; }
+
+    .sleek-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+    .sleek-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .sleek-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+    .sleek-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+    .sleek-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
+
+    .rp-stat-card:hover { transform: translateY(-2px); }
+    .rp-step-card:hover .rp-step-bar { opacity: 1 !important; }
+    .rp-step-card:hover { border-color: #e2e8f0; }
+
+    @keyframes rp-fade-up {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-    .sleek-scrollbar::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .sleek-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      transition: background 0.2s ease;
-    }
-    .sleek-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.25);
-    }
-    /* For Firefox */
-    .sleek-scrollbar {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-    }
+    .rp-fade-up { animation: rp-fade-up 0.4s ease both; }
+    .rp-delay-1 { animation-delay: 80ms; }
+    .rp-delay-2 { animation-delay: 160ms; }
+    .rp-delay-3 { animation-delay: 240ms; }
+    .rp-delay-4 { animation-delay: 320ms; }
   `}</style>
 )
 
+// ─── Risk Config ──────────────────────────────────────────────────────────────
 
-function Section({ icon, title, children, delay = "" }) {
+const riskConfig = {
+  HIGH:    {
+    bg: "bg-red-50",     text: "text-red-600",     border: "border-red-200",
+    dot: "bg-red-500",   bar: "bg-red-500",         accentBar: "bg-red-400",
+    numBg: "bg-red-50",  numBorder: "border-red-200", numText: "text-red-500",
+  },
+  MEDIUM:  {
+    bg: "bg-amber-50",   text: "text-amber-600",   border: "border-amber-200",
+    dot: "bg-amber-500", bar: "bg-amber-400",       accentBar: "bg-amber-400",
+    numBg: "bg-amber-50", numBorder: "border-amber-200", numText: "text-amber-500",
+  },
+  LOW:     {
+    bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200",
+    dot: "bg-emerald-500", bar: "bg-emerald-500",  accentBar: "bg-emerald-400",
+    numBg: "bg-emerald-50", numBorder: "border-emerald-200", numText: "text-emerald-500",
+  },
+  DEFAULT: {
+    bg: "bg-blue-50",    text: "text-blue-600",    border: "border-blue-200",
+    dot: "bg-blue-500",  bar: "bg-blue-500",        accentBar: "bg-blue-400",
+    numBg: "bg-blue-50", numBorder: "border-blue-200", numText: "text-blue-500",
+  },
+}
+const getRisk = (label) => riskConfig[label?.toUpperCase()] || riskConfig.DEFAULT
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+
+function StatCard({ label, value, risk, icon: Icon, delay = "" }) {
+  const rc = risk ? getRisk(risk) : null
   return (
-    <div className={`bg-white/60 backdrop-blur-md border border-slate-200/60 rounded-3xl overflow-hidden animate-slide-up ${delay} flex flex-col h-full shadow-sm`}>
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100 bg-white/40">
-        <div className="flex items-center justify-center p-2 bg-white rounded-xl shadow-sm border border-slate-200/60 flex-shrink-0">
-          {icon}
+    <div className={`rp-stat-card rp-fade-up ${delay} bg-white border border-slate-200 rounded-2xl p-5 transition-all duration-200 shadow-sm`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-2 rounded-xl ${rc ? rc.bg : "bg-slate-50"} border ${rc ? rc.border : "border-slate-200"}`}>
+          <Icon size={16} className={rc ? rc.text : "text-slate-500"} />
         </div>
-        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">{title}</h3>
+        {rc && (
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${rc.bg} border ${rc.border}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${rc.dot}`} />
+            <span className={`rp-mono text-[10px] font-bold tracking-widest uppercase ${rc.text}`}>{risk}</span>
+          </div>
+        )}
       </div>
-      <div className="p-6 md:p-8 flex-grow">
-        {children}
+      <p className="rp-mono text-[28px] font-bold text-slate-900 leading-none tracking-tight">{value}</p>
+      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mt-2">{label}</p>
+    </div>
+  )
+}
+
+// ─── Section Wrapper ──────────────────────────────────────────────────────────
+
+function Section({ icon: Icon, iconColor = "text-slate-500", title, meta, children, delay = "" }) {
+  return (
+    <div className={`rp-fade-up ${delay} bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm`}>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          <Icon size={15} className={iconColor} />
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-500">{title}</h2>
+        </div>
+        {meta && (
+          <span className="rp-mono text-[10px] text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
+            {meta}
+          </span>
+        )}
+      </div>
+      <div className="p-6">{children}</div>
+    </div>
+  )
+}
+
+// ─── Executive Summary ────────────────────────────────────────────────────────
+
+function ExecutiveSummary({ text, riskLabel }) {
+  const rc = getRisk(riskLabel)
+  return (
+    <div className={`rp-fade-up rp-delay-1 border rounded-2xl overflow-hidden shadow-sm ${rc.border}`}>
+      <div className={`h-[3px] w-full ${rc.bar}`} />
+      <div className="bg-white px-6 py-6 flex gap-5">
+        <div className={`flex-shrink-0 mt-0.5 w-8 h-8 rounded-xl ${rc.bg} border ${rc.border} flex items-center justify-center`}>
+          <TrendingUp size={14} className={rc.text} />
+        </div>
+        <div className="space-y-1.5">
+          <p className={`rp-mono text-[10px] font-bold uppercase tracking-[0.18em] ${rc.text}`}>Executive Summary</p>
+          <p className="text-slate-700 text-[15px] font-normal leading-relaxed">{text}</p>
+        </div>
       </div>
     </div>
   )
 }
 
-function StatCard({ title, value, color = "blue", icon: Icon }) {
-  const colorMap = {
-    blue: "text-blue-600 bg-blue-50/50 border-blue-100 ring-blue-50",
-    green: "text-emerald-600 bg-emerald-50/50 border-emerald-100 ring-emerald-50",
-    orange: "text-amber-600 bg-amber-50/50 border-amber-100 ring-amber-50",
-    red: "text-rose-600 bg-rose-50/50 border-rose-100 ring-rose-50"
-  }
+// ─── Mitigation Step ─────────────────────────────────────────────────────────
 
+function MitigationStep({ text, index, rc }) {
   return (
-    <div className={`relative p-5 rounded-2xl border transition-all hover:shadow-lg hover:-translate-y-1 ring-4 ${colorMap[color]}`}>
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">{title}</p>
-          <p className="text-3xl font-black tracking-tight">{value}</p>
-        </div>
-        <div className="p-2 bg-white/50 rounded-lg">
-          {Icon && <Icon size={20} />}
-        </div>
+    <div className="rp-step-card group relative flex gap-4 p-5 rounded-xl bg-slate-50/70 border border-slate-100 transition-all duration-200 overflow-hidden">
+      {/* Left accent bar — risk color, matches executive summary */}
+      <div className={`rp-step-bar absolute left-0 top-0 bottom-0 w-[2px] ${rc.accentBar} opacity-40 transition-opacity duration-200 rounded-l-xl`} />
+
+      {/* Step number — tinted with risk color */}
+      <div className={`rp-mono flex-shrink-0 w-6 h-6 mt-0.5 rounded-md ${rc.numBg} border ${rc.numBorder} flex items-center justify-center text-[11px] font-bold ${rc.numText} shadow-sm`}>
+        {String(index + 1).padStart(2, "0")}
       </div>
+
+      {/* Text */}
+      <p className="text-slate-600 text-[13.5px] leading-[1.75] font-normal">{stripMarkdown(text)}</p>
     </div>
   )
 }
 
-function ImprovementItem({ issue }) {
+// ─── Code Block ───────────────────────────────────────────────────────────────
+
+function CodeBlock({ code, language }) {
   const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const decodedCode = useMemo(() => decodeEscapedText(issue.code_example || ""), [issue.code_example])
-  const safeLanguage = normalizeLanguage(issue.language)
-  const isLong = decodedCode.split("\n").length > 12
+  const decoded = useMemo(() => decodeEscapedText(code), [code])
+  const lang = normalizeLanguage(language)
+  const displayLang = language?.toLowerCase().trim() || "text"
+  const isLong = decoded.split("\n").length > 12
 
   const handleCopy = async () => {
-    if (!decodedCode) return
-    await navigator.clipboard.writeText(decodedCode)
+    await navigator.clipboard.writeText(decoded)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
 
   return (
-    <div className="group/item relative pl-6 space-y-4">
-      <div className="absolute -left-[3px] top-2.5 w-1.5 h-1.5 bg-slate-300 rounded-full group-hover/item:bg-blue-400 transition-colors" />
-      
-      <div className="text-slate-700 leading-relaxed text-[15px] font-medium break-words">
-        {issue.description}
-      </div>
-
-      {decodedCode && (
-        <div className="rounded-2xl border border-slate-200 overflow-hidden bg-[#1a1b26] shadow-xl animate-scale-in">
-          <div className="flex justify-between items-center px-4 py-3 bg-[#16161e] border-b border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500/30 border border-rose-500/50" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/30 border border-amber-500/50" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/30 border border-emerald-500/50" />
-              </div>
-              <div className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em]">
-                {safeLanguage}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {isLong && (
-                <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-black text-slate-400 hover:text-white transition-colors bg-white/5 rounded-md uppercase cursor-pointer">
-                  {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />} {expanded ? "Collapse" : "Expand"}
-                </button>
-              )}
-              <button onClick={handleCopy} className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-black text-slate-400 hover:text-white transition-colors bg-white/5 rounded-md uppercase cursor-pointer">
-                {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />} {copied ? "Copied" : "Copy"}
-              </button>
-            </div>
+    <div className="rounded-xl border border-slate-200 overflow-hidden bg-[#0d1117] shadow-lg">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[#161b22] border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-rose-500/25 border border-rose-500/40" />
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500/25 border border-amber-500/40" />
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/25 border border-emerald-500/40" />
           </div>
-
-          <SyntaxHighlighter
-            language={safeLanguage}
-            style={oneDark}
-            showLineNumbers
-            wrapLongLines
-            className="sleek-scrollbar"
-            customStyle={{
-              margin: 0,
-              padding: '20px',
-              fontSize: "0.85rem",
-              maxHeight: !expanded && isLong ? "320px" : "none",
-              background: 'transparent',
-            }}
+          <span className="rp-mono text-[10px] text-slate-400 tracking-widest uppercase">{displayLang}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {isLong && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="rp-mono flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-slate-500 hover:text-slate-200 bg-white/5 hover:bg-white/10 rounded-md transition-all cursor-pointer"
+            >
+              {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+              {expanded ? "Collapse" : "Expand"}
+            </button>
+          )}
+          <button
+            onClick={handleCopy}
+            className="rp-mono flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-slate-500 hover:text-slate-200 bg-white/5 hover:bg-white/10 rounded-md transition-all cursor-pointer"
           >
-            {decodedCode}
-          </SyntaxHighlighter>
+            {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+      </div>
+      <SyntaxHighlighter
+        language={lang}
+        style={oneDark}
+        showLineNumbers
+        wrapLongLines
+        className="sleek-scrollbar"
+        customStyle={{
+          margin: 0,
+          padding: "18px 20px",
+          fontSize: "0.82rem",
+          lineHeight: "1.65",
+          maxHeight: !expanded && isLong ? "300px" : "none",
+          background: "transparent",
+        }}
+      >
+        {decoded}
+      </SyntaxHighlighter>
+    </div>
+  )
+}
+
+// ─── Issue Item ───────────────────────────────────────────────────────────────
+
+function IssueItem({ issue }) {
+  const decoded = useMemo(() => decodeEscapedText(issue.code_example || ""), [issue.code_example])
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-3">
+        <div className="flex-shrink-0 mt-1">
+          <CircleDot size={13} className="text-slate-300" />
+        </div>
+        <p className="text-slate-700 text-[14.5px] leading-relaxed font-normal">{issue.description}</p>
+      </div>
+      {decoded && (
+        <div className="ml-6">
+          <CodeBlock code={decoded} language={issue.language} />
         </div>
       )}
     </div>
   )
 }
 
+// ─── File Review ──────────────────────────────────────────────────────────────
+
+function FileReview({ review }) {
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2.5">
+        <div className="h-px flex-1 bg-slate-100" />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 shadow-sm">
+          <FileCode2 size={12} className="text-blue-400 flex-shrink-0" />
+          <span className="rp-mono text-[11px] text-slate-300 font-medium">{review.file}</span>
+        </div>
+        <div className="h-px flex-1 bg-slate-100" />
+      </div>
+      <div className="space-y-6 pl-1">
+        {review.issues?.map((issue, i) => (
+          <IssueItem key={i} issue={issue} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export function ResultsPanel({ results }) {
   const review = results?.review_comments || {}
   const riskExplanation = review.risk_explanation || ""
   const mitigationSteps = review.mitigation_steps || []
   const fileReviews = review.file_reviews || []
-  
-  const riskScore = results?.risk_score ?? 0 
+
+  const riskScore = results?.risk_score ?? 0
   const riskLabel = results?.risk_label ?? "LOW"
-  const prUrl = results?.pr_url || "#"
+  const rc = getRisk(riskLabel)
 
-  const totalIssuesCount = useMemo(() => {
-    return fileReviews.reduce((acc, file) => acc + (file.issues?.length || 0), 0)
-  }, [fileReviews])
-
-  const getRiskColor = (label) => {
-    switch (label?.toUpperCase()) {
-      case "HIGH": return "red"
-      case "MEDIUM": return "orange"
-      case "LOW": return "green"
-      default: return "blue"
-    }
-  }
+  const totalIssues = useMemo(
+    () => fileReviews.reduce((acc, f) => acc + (f.issues?.length || 0), 0),
+    [fileReviews]
+  )
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 p-6 md:p-12 min-h-screen selection:bg-blue-100">
-      <ScrollbarStyles />
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
-        <div className="animate-fade-in">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-[10px] font-black tracking-widest mb-4 border border-blue-100 uppercase">
-               <Zap size={12} fill="currentColor" /> AI Analysis Engine
-            </div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-                PR Security <span className="text-blue-600">Review</span>
-            </h1>
-            <p className="text-slate-500 mt-2 font-medium">Deep inspection and mitigation strategy for active PR.</p>
+    <div className="rp-root max-w-5xl mx-auto px-4 py-10 space-y-6 min-h-screen">
+      <GlobalStyles />
+
+      {/* Page header */}
+      <div className="rp-fade-up flex items-start justify-between pb-2">
+        <div>
+          <div className="rp-mono inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600 mb-3">
+            <Zap size={11} fill="currentColor" />
+            AI Analysis Engine
+          </div>
+          <h1 className="text-[32px] font-semibold text-slate-900 tracking-tight leading-tight">
+            PR Security Review
+          </h1>
+          <p className="text-slate-400 text-[14px] mt-1 font-normal">
+            Automated risk assessment and code-level findings.
+          </p>
         </div>
-      </header>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 animate-slide-up">
-        <StatCard title="Security Risk" value={riskScore.toFixed(1)} color={getRiskColor(riskLabel)} icon={Shield} />
-        <StatCard title="Risk Rating" value={riskLabel} color={getRiskColor(riskLabel)} icon={AlertTriangle} />
-        <StatCard title="Action Items" value={mitigationSteps.length} color="orange" icon={CheckCircle2} />
-        <StatCard title="Key Findings" value={totalIssuesCount} color="blue" icon={Code2} />
       </div>
 
-      <div className="grid grid-cols-1 gap-10">
-        {riskExplanation && (
-           <div className="relative animate-slide-up delay-75 group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-[2.5rem] blur opacity-10"></div>
-              
-              <div className="relative bg-white/70 backdrop-blur-xl border border-blue-100 rounded-[2rem] p-8 shadow-sm">
-                <div className="flex flex-col md:flex-row md:items-center gap-6">
-                  <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
-                    <Info size={24} className="text-white" />
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600/80">
-                      Executive Summary
-                    </h3>
-                    <p className="text-slate-700 text-[15px] font-semibold leading-relaxed italic">
-                      {riskExplanation}
-                    </p>
-                  </div>
-                </div>
-              </div>
-           </div>
-        )}
-        {mitigationSteps.length > 0 && (
-          <Section delay="delay-150" icon={<AlertTriangle className="text-amber-500" size={18} />} title="Mitigation Strategy">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
-              {mitigationSteps.map((step, i) => (
-                <div key={i} className="group flex gap-5 p-6 bg-slate-50/50 rounded-3xl border border-slate-100 hover:border-blue-300 hover:bg-white hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-300">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[11px] font-black text-slate-400 group-hover:border-blue-500 group-hover:text-blue-600 group-hover:bg-blue-50 transition-all">
-                    {i + 1}
-                  </div>
-                  <div className="text-slate-600 text-[14px] leading-relaxed font-medium break-words w-full overflow-hidden">
-                    {stripMarkdown(step)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Section>
-        )}
-        {fileReviews.length > 0 && (
-          <Section delay="delay-300" icon={<Code2 className="text-blue-500" size={18} />} title="File Level Analysis">
-            <div className="space-y-12">
-              {fileReviews.map((review, fIndex) => (
-                <div key={fIndex} className="relative pl-10 border-l-2 border-slate-100 last:border-transparent">
-                  <div className="absolute -left-[11px] top-0.5 w-5 h-5 bg-white border-4 border-blue-600 rounded-full shadow-sm ring-4 ring-blue-50" />
-                  
-                  <div className="space-y-8">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-[11px] font-bold tracking-tight shadow-lg shadow-slate-200">
-                      <FileCode2 size={14} className="text-blue-400" />
-                      {review.file}
-                    </div>
-
-                    <div className="space-y-10">
-                      {review.issues?.map((issue, iIndex) => (
-                        <ImprovementItem key={iIndex} issue={issue} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Section>
-        )}
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Risk Score"   value={riskScore.toFixed(1)} icon={Shield}        risk={riskLabel} delay="rp-delay-1" />
+        <StatCard label="Risk Label"   value={riskLabel}            icon={AlertTriangle}  risk={riskLabel} delay="rp-delay-2" />
+        <StatCard label="Action Items" value={mitigationSteps.length} icon={CheckCircle2}                 delay="rp-delay-3" />
+        <StatCard label="Key Findings" value={totalIssues}           icon={Code2}                         delay="rp-delay-4" />
       </div>
+
+      {/* Executive summary */}
+      {riskExplanation && (
+        <ExecutiveSummary text={riskExplanation} riskLabel={riskLabel} />
+      )}
+
+      {/* Mitigation strategy */}
+      {mitigationSteps.length > 0 && (
+        <Section
+          icon={AlertTriangle}
+          iconColor={rc.text}
+          title="Mitigation Strategy"
+          meta={`${mitigationSteps.length} action${mitigationSteps.length !== 1 ? "s" : ""}`}
+          delay="rp-delay-2"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {mitigationSteps.map((step, i) => (
+              <MitigationStep key={i} text={step} index={i} rc={rc} />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* File level analysis */}
+      {fileReviews.length > 0 && (
+        <Section
+          icon={Code2}
+          iconColor="text-blue-500"
+          title="File Level Analysis"
+          meta={`${fileReviews.length} file${fileReviews.length !== 1 ? "s" : ""}`}
+          delay="rp-delay-3"
+        >
+          <div className="space-y-10">
+            {fileReviews.map((r, i) => (
+              <FileReview key={i} review={r} />
+            ))}
+          </div>
+        </Section>
+      )}
     </div>
   )
 }

@@ -15,6 +15,10 @@ MAX_PROMPT_CHARS = 12000
 
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
+# ============================================================
+# JSON Schema (STRICT STRUCTURE)
+# ============================================================
+
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -49,132 +53,95 @@ SCHEMA = {
     "required": ["risk_explanation", "mitigation_steps", "file_reviews"],
 }
 
+# ============================================================
+# Utilities
+# ============================================================
+
 def _truncate(text: str, limit: int = 4000) -> str:
     if not text:
         return ""
     return text[:limit]
 
+
 def _sanitize_code(code: str) -> str:
+    """
+    Clean and normalize code examples returned by the LLM.
+    Handles escaped newlines, markdown fences, and collapsed single-line code.
+    """
     if not code:
         return code
 
-    code = re.sub(r"```[\w+-]*\n?", "", code)
+    # Step 1: Strip markdown code fences
+    code = re.sub(r"```[\w+\-#]*\n?", "", code)
     code = code.replace("```", "")
 
-    if "\\n" in code:
-        code = code.replace("\\n", "\n")
-        code = code.replace("\\t", "\t")
-        code = code.replace("\\r", "\r")
+    # Step 2: Convert escaped sequences to real characters
+    code = code.replace("\\n", "\n")
+    code = code.replace("\\t", "\t")
+    code = code.replace("\\r", "\r")
+    code = code.replace('\\"', '"')
+    code = code.replace("\\'", "'")
 
-    if "\n" in code and code.count("\n") >= 3 and not any(len(line.strip()) > 120 for line in code.split('\n') if line.strip()):
-        lines = [line.rstrip() for line in code.split('\n')]
-        code = '\n'.join(lines)
-        code = re.sub(r'\n\s*\n\s*\n', '\n\n', code)
-        return code.strip()
+    # Step 3: If already properly multi-line, just clean trailing whitespace and return
+    lines = code.split("\n")
+    if len(lines) >= 2 and any(line.strip() for line in lines):
+        cleaned = [line.rstrip() for line in lines]
+        # Remove leading/trailing blank lines
+        while cleaned and not cleaned[0].strip():
+            cleaned.pop(0)
+        while cleaned and not cleaned[-1].strip():
+            cleaned.pop()
+        return "\n".join(cleaned)
 
-    # UNIVERSAL FORMATTING FOR ALL LANGUAGES
-    
-    # 1. Handle annotations/decorators (Java @, Python @, C# [])
-    code = re.sub(r'(@\w+(?:\([^)]*\))?)\s*([a-zA-Z])', r'\1\n\2', code)
-    code = re.sub(r'(\[\w+(?:\([^)]*\))?\])\s*([a-zA-Z])', r'\1\n\2', code)
-    
-    # 2. Add newlines after semicolons (Java, C++, C#, JavaScript)
-    code = re.sub(r';(?=\s*[a-zA-Z@\[])', ';\n', code)
-    
-    # 3. Handle function/method signatures
-    code = re.sub(r'\)\s*{', ') {\n', code)
-    code = re.sub(r':\s*{', ': {\n', code)  # JavaScript arrow functions
-    
-    # 4. Handle parameter lists - break long ones
-    if '(' in code and ')' in code:
-        # Find method signatures and break parameters
-        code = re.sub(r',\s*(@\w+)', r',\n        \1', code)  # Annotated params
-        code = re.sub(r',\s*([a-zA-Z_]\w*\s+[a-zA-Z_]\w*)', r',\n        \1', code)  # Typed params
-        code = re.sub(r',\s*([a-zA-Z_]\w*\s*[=:])', r',\n        \1', code)  # Python/JS params
-    
-    # 5. Handle braces (Java, C++, C#, JavaScript, Go)
-    code = re.sub(r'([a-zA-Z0-9_)]\s*){', r'\1 {\n', code)
-    code = re.sub(r'}(?=\s*[a-zA-Z@])', '}\n', code)
-    
-    # 6. Handle Python colons
-    code = re.sub(r':(?=\s*[a-zA-Z])', ':\n', code)
-    
-    # 7. Handle return statements
-    code = re.sub(r'return\s+([a-zA-Z])', r'return \1', code)
-    
-    # 8. Clean up spacing
-    code = re.sub(r' +', ' ', code)
-    code = re.sub(r'\s*{\s*', ' {\n', code)
-    code = re.sub(r'\s*}\s*', '\n}', code)
-    
-    # 9. UNIVERSAL INDENTATION
-    lines = code.split('\n')
-    formatted_lines = []
-    indent_level = 0
-    
-    for line in lines:
-        line = line.strip()
+    # Step 4: Code is collapsed into a single line — attempt to expand it
+    single = code.strip()
+
+    # Insert newlines after semicolons (JS, Java, C++, C#, Go, etc.)
+    single = re.sub(r";(?=\s*(?:[a-zA-Z@\[{\"'`]|$))", ";\n", single)
+
+    # Insert newlines before/after braces
+    single = re.sub(r"\{(?!\n)", "{\n", single)
+    single = re.sub(r"(?<!\n)\}", "\n}", single)
+
+    # Insert newlines after colons that start blocks (Python)
+    single = re.sub(r":(?=\s*(?:def |class |if |for |while |return |[a-zA-Z_]))", ":\n    ", single)
+
+    # Insert newlines after common statement keywords
+    single = re.sub(r"(return\s+[^;{\n]+);", r"\1;\n", single)
+    single = re.sub(r"(import\s+[^;\n]+);", r"\1;\n", single)
+
+    # Split and re-indent naively
+    raw_lines = single.split("\n")
+    indent = 0
+    result = []
+
+    for raw_line in raw_lines:
+        line = raw_line.strip()
         if not line:
             continue
-        
-        # Annotations/decorators (Java @, Python @, C# [])
-        if line.startswith(('@', '[')):
-            formatted_lines.append('  ' * indent_level + line)
-            continue
-        
-        # Closing braces/brackets
-        if line.startswith(('}', ']', ')')):
-            indent_level = max(0, indent_level - 1)
-            formatted_lines.append('  ' * indent_level + line)
-            continue
-        
-        # Method signatures (any language)
-        if any(keyword in line for keyword in ['public ', 'private ', 'protected ', 'def ', 'function ', 'func ', 'class ', 'interface ']):
-            formatted_lines.append('  ' * indent_level + line)
-            if line.endswith(('{', ':')):
-                indent_level += 1
-            continue
-        
-        # Parameters (indented from method)
-        if any(param in line for param in ['@RequestParam', '@PathVariable', '@RequestBody']) or \
-           (any(type_keyword in line for type_keyword in ['int ', 'String ', 'boolean ', 'long ', 'double ', 'float ']) and '=' in line):
-            formatted_lines.append('  ' * (indent_level + 1) + line)
-            continue
-        
-        # Method closing with parameters
-        if line in (')', ') {') or line.endswith(') {'):
-            if not any(keyword in line for keyword in ['public ', 'private ', 'protected ']):
-                indent_level = max(0, indent_level - 1)
-            formatted_lines.append('  ' * indent_level + line)
-            if line.endswith(('{', ':')):
-                indent_level += 1
-            continue
-        
-        # Return statements and method calls
-        if line.startswith(('return ', 'throw ', 'yield ')):
-            formatted_lines.append('  ' * (indent_level + 1) + line)
-            continue
-        
-        # Default case
-        formatted_lines.append('  ' * indent_level + line)
-        
-        # Increase indent after opening braces/colons
-        if line.endswith(('{', ':')):
-            indent_level += 1
 
-    code = '\n'.join(formatted_lines)
-    
-    # Final cleanup
-    code = re.sub(r'\n\s*\n', '\n', code)
-    
+        # Decrease indent for closing braces/brackets
+        if line.startswith(("}",")","]")):
+            indent = max(0, indent - 1)
+
+        result.append("    " * indent + line)
+
+        # Increase indent after opening braces/colon
+        if line.endswith(("{", ":", "(")):
+            indent += 1
+        # Reset if brace opens and closes on same line
+        if line.count("{") > 0 and line.count("{") == line.count("}"):
+            pass  # balanced — don't change indent
+
+    code = "\n".join(result)
+
+    # Final cleanup: collapse 3+ blank lines into 1
+    code = re.sub(r"\n{3,}", "\n\n", code)
+
     return code.strip()
 
-def _validate_structure(result: Dict[str, Any], context: Dict) -> bool:
-    """
-    Only validate structure and file integrity.
-    Do NOT reject for formatting issues.
-    """
 
+def _validate_structure(result: Dict[str, Any], context: Dict) -> bool:
     files = context.get("file_names", [])
     file_reviews = result.get("file_reviews")
 
@@ -184,24 +151,25 @@ def _validate_structure(result: Dict[str, Any], context: Dict) -> bool:
     for review in file_reviews:
         if review.get("file") not in files:
             return False
-
         issues = review.get("issues")
         if not isinstance(issues, list):
             return False
-
         for issue in issues:
             if not issue.get("description"):
                 return False
 
     return True
 
+
+# ============================================================
+# Prompt Builder
+# ============================================================
+
 def _build_prompt(context: Dict) -> str:
-
     prompt = f"""
-You are a strict senior software engineer reviewing a GitHub Pull Request.
+You are a strict senior software engineer performing a security review of a GitHub Pull Request.
 
-Return strictly valid JSON only.
-Follow the provided schema exactly.
+Return strictly valid JSON only. Follow the provided schema exactly.
 
 Schema:
 
@@ -215,21 +183,42 @@ Schema:
         {{
           "description": string,
           "code_example": string (optional),
-          "language": string (required if code_example present)
+          "language": string (required if code_example is present)
         }}
       ]
     }}
   ]
 }}
 
-Rules:
+CRITICAL RULES FOR CODE EXAMPLES:
 
-1. Do NOT use markdown.
-2. Do NOT wrap code in triple backticks.
-3. Code must be properly formatted.
-4. Each file must exactly match one of Files Changed.
-5. Do not merge imports with other statements.
-6. Numbered lists must use proper newline formatting.
+1. Do NOT use markdown — no triple backticks, no fences.
+2. The "language" field MUST be the actual language/framework of the file:
+   - .py → "python"
+   - .js / .jsx → "javascript"
+   - .ts / .tsx → "typescript"
+   - .vue → "vue"
+   - .html → "html"
+   - .css / .scss → "css"
+   - .go → "go"
+   - .java → "java"
+   - .kt → "kotlin"
+   - .swift → "swift"
+   - .rb → "ruby"
+   - .php → "php"
+   - .rs → "rust"
+   - .cpp / .cc → "cpp"
+   - .c → "c"
+   - .sql → "sql"
+   - .sh / .bash → "bash"
+   - .yaml / .yml → "yaml"
+   - .json → "json"
+   Never use "text" or "code" as the language.
+3. Code in "code_example" MUST use real newline characters (\\n), NOT literal backslash-n.
+   Each statement must be on its own line — never collapse multiple statements onto one line.
+4. Preserve original indentation. Use 2 or 4 spaces consistently.
+5. Each file must exactly match one of the Files Changed listed below.
+6. Do not merge import statements with other code.
 
 Context:
 
@@ -243,8 +232,8 @@ Title:
 Body:
 {_truncate(context.get("body", ""), 3000)}
 
-Diff Summary:
-{_truncate(context.get("diff_summary", ""), 4000)}
+Diff:
+{_truncate(context.get("selected_patch", ""), 4000)}
 """
 
     if len(prompt) > MAX_PROMPT_CHARS:
@@ -253,8 +242,11 @@ Diff Summary:
     return prompt
 
 
-async def generate_review(context: Dict) -> Dict[str, Any]:
+# ============================================================
+# Main LLM Entry
+# ============================================================
 
+async def generate_review(context: Dict) -> Dict[str, Any]:
     prompt = _build_prompt(context)
 
     for attempt in range(1, MAX_RETRIES + 1):
@@ -267,7 +259,7 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
                 config={
                     "temperature": 0.2,
                     "response_mime_type": "application/json",
-                    "response_schema": SCHEMA, 
+                    "response_schema": SCHEMA,
                 },
             )
 
@@ -277,11 +269,13 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
             result = dict(response.parsed)
             result["source"] = "llm"
 
+            # Sanitize code examples
             for file_review in result.get("file_reviews", []):
                 for issue in file_review.get("issues", []):
                     if issue.get("code_example"):
                         issue["code_example"] = _sanitize_code(issue["code_example"])
 
+            # Structural validation
             if not _validate_structure(result, context):
                 raise ValueError("Structure validation failed")
 
@@ -291,7 +285,7 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
         except ClientError as e:
             if "429" in str(e):
                 logger.error("Quota exceeded")
-                break
+                raise
             logger.warning(f"Client error: {e}")
 
         except Exception as e:
@@ -303,15 +297,8 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
     logger.error("LLM failed after retries")
 
     return {
-    "risk_explanation": (
-        "AI review is temporarily unavailable. "
-        "Risk assessment is still provided, but detailed code analysis "
-        "could not be generated at this time."
-    ),
-    "mitigation_steps": [
-        "Please review the pull request manually.",
-        "Try again later if AI analysis is required."
-    ],
-    "file_reviews": [],
-    "source": "fallback"
-}
+        "risk_explanation": "LLM validation failed. Manual review recommended.",
+        "mitigation_steps": ["Perform manual review."],
+        "file_reviews": [],
+        "source": "fallback"
+    }
