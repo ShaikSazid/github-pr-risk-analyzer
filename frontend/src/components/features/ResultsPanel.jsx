@@ -16,7 +16,6 @@ import {
   CircleDot,
 } from "lucide-react"
 
-// ─── Utilities ────────────────────────────────────────────────────────────────
 
 const decodeEscapedText = (text = "") => {
   if (!text) return ""
@@ -60,7 +59,6 @@ const normalizeLanguage = (lang) => {
   return LANGUAGE_MAP[lang.toLowerCase().trim()] || "text"
 }
 
-// ─── Global Styles ────────────────────────────────────────────────────────────
 
 const GlobalStyles = () => (
   <style>{`
@@ -91,7 +89,6 @@ const GlobalStyles = () => (
   `}</style>
 )
 
-// ─── Risk Config ──────────────────────────────────────────────────────────────
 
 const riskConfig = {
   HIGH:    {
@@ -117,7 +114,6 @@ const riskConfig = {
 }
 const getRisk = (label) => riskConfig[label?.toUpperCase()] || riskConfig.DEFAULT
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, risk, icon: Icon, delay = "" }) {
   const rc = risk ? getRisk(risk) : null
@@ -140,7 +136,6 @@ function StatCard({ label, value, risk, icon: Icon, delay = "" }) {
   )
 }
 
-// ─── Section Wrapper ──────────────────────────────────────────────────────────
 
 function Section({ icon: Icon, iconColor = "text-slate-500", title, meta, children, delay = "" }) {
   return (
@@ -161,7 +156,6 @@ function Section({ icon: Icon, iconColor = "text-slate-500", title, meta, childr
   )
 }
 
-// ─── Executive Summary ────────────────────────────────────────────────────────
 
 function ExecutiveSummary({ text, riskLabel }) {
   const rc = getRisk(riskLabel)
@@ -181,26 +175,19 @@ function ExecutiveSummary({ text, riskLabel }) {
   )
 }
 
-// ─── Mitigation Step ─────────────────────────────────────────────────────────
 
 function MitigationStep({ text, index, rc }) {
   return (
     <div className="rp-step-card group relative flex gap-4 p-5 rounded-xl bg-slate-50/70 border border-slate-100 transition-all duration-200 overflow-hidden">
-      {/* Left accent bar — risk color, matches executive summary */}
       <div className={`rp-step-bar absolute left-0 top-0 bottom-0 w-[2px] ${rc.accentBar} opacity-40 transition-opacity duration-200 rounded-l-xl`} />
-
-      {/* Step number — tinted with risk color */}
       <div className={`rp-mono flex-shrink-0 w-6 h-6 mt-0.5 rounded-md ${rc.numBg} border ${rc.numBorder} flex items-center justify-center text-[11px] font-bold ${rc.numText} shadow-sm`}>
         {String(index + 1).padStart(2, "0")}
       </div>
-
-      {/* Text */}
       <p className="text-slate-600 text-[13.5px] leading-[1.75] font-normal">{stripMarkdown(text)}</p>
     </div>
   )
 }
 
-// ─── Code Block ───────────────────────────────────────────────────────────────
 
 function CodeBlock({ code, language }) {
   const [expanded, setExpanded] = useState(false)
@@ -268,7 +255,6 @@ function CodeBlock({ code, language }) {
   )
 }
 
-// ─── Issue Item ───────────────────────────────────────────────────────────────
 
 function IssueItem({ issue }) {
   const decoded = useMemo(() => decodeEscapedText(issue.code_example || ""), [issue.code_example])
@@ -289,7 +275,6 @@ function IssueItem({ issue }) {
   )
 }
 
-// ─── File Review ──────────────────────────────────────────────────────────────
 
 function FileReview({ review }) {
   return (
@@ -311,7 +296,6 @@ function FileReview({ review }) {
   )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ResultsPanel({ results }) {
   const review = results?.review_comments || {}
@@ -332,7 +316,6 @@ export function ResultsPanel({ results }) {
     <div className="rp-root max-w-5xl mx-auto px-4 py-10 space-y-6 min-h-screen">
       <GlobalStyles />
 
-      {/* Page header */}
       <div className="rp-fade-up flex items-start justify-between pb-2">
         <div>
           <div className="rp-mono inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600 mb-3">
@@ -348,7 +331,6 @@ export function ResultsPanel({ results }) {
         </div>
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Risk Score"   value={riskScore.toFixed(1)} icon={Shield}        risk={riskLabel} delay="rp-delay-1" />
         <StatCard label="Risk Label"   value={riskLabel}            icon={AlertTriangle}  risk={riskLabel} delay="rp-delay-2" />
@@ -356,12 +338,10 @@ export function ResultsPanel({ results }) {
         <StatCard label="Key Findings" value={totalIssues}           icon={Code2}                         delay="rp-delay-4" />
       </div>
 
-      {/* Executive summary */}
       {riskExplanation && (
         <ExecutiveSummary text={riskExplanation} riskLabel={riskLabel} />
       )}
 
-      {/* Mitigation strategy */}
       {mitigationSteps.length > 0 && (
         <Section
           icon={AlertTriangle}
@@ -378,7 +358,6 @@ export function ResultsPanel({ results }) {
         </Section>
       )}
 
-      {/* File level analysis */}
       {fileReviews.length > 0 && (
         <Section
           icon={Code2}

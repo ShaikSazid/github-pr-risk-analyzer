@@ -15,10 +15,6 @@ MAX_PROMPT_CHARS = 12000
 
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-# ============================================================
-# JSON Schema (STRICT STRUCTURE)
-# ============================================================
-
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -53,9 +49,6 @@ SCHEMA = {
     "required": ["risk_explanation", "mitigation_steps", "file_reviews"],
 }
 
-# ============================================================
-# Utilities
-# ============================================================
 
 def _truncate(text: str, limit: int = 4000) -> str:
     if not text:
@@ -161,10 +154,6 @@ def _validate_structure(result: Dict[str, Any], context: Dict) -> bool:
     return True
 
 
-# ============================================================
-# Prompt Builder
-# ============================================================
-
 def _build_prompt(context: Dict) -> str:
     prompt = f"""
 You are a strict senior software engineer performing a security review of a GitHub Pull Request.
@@ -241,10 +230,6 @@ Diff:
 
     return prompt
 
-
-# ============================================================
-# Main LLM Entry
-# ============================================================
 
 async def generate_review(context: Dict) -> Dict[str, Any]:
     prompt = _build_prompt(context)
