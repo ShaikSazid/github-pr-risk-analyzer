@@ -229,7 +229,7 @@ Returns server status.
 - Python 3.11+
 - Node.js 18+
 - [PDM](https://pdm-project.org/) — Python package manager
-- A GitHub personal access token (classic, with `repo` scope for private repos or `public_repo` for public)
+- A GitHub personal access token
 - A Google Gemini API key
 
 ### 1. Clone
