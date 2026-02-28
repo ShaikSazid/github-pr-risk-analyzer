@@ -5,8 +5,6 @@ import {
   Sparkles,
   ArrowRight,
   RotateCcw,
-  AlertTriangle,
-  XCircle,
 } from "lucide-react";
 import { validateGitHubURL } from "../../utils/validators";
 
@@ -39,7 +37,9 @@ export function PRAnalyzer({
     onReset();
   };
 
-  const serverError = !localError && error;
+  // localError takes priority; server error falls back to same inline display
+  const displayError = localError
+    || (error ? (typeof error === "string" ? error : error?.message) : null);
 
   return (
     <div className="bg-white/60 backdrop-blur-md border border-slate-200/60 rounded-3xl overflow-hidden animate-slide-up shadow-sm">
@@ -58,6 +58,7 @@ export function PRAnalyzer({
             Enter a GitHub PR URL to get an instant AI-powered risk assessment
             and code review.
           </p>
+
           <div className="space-y-2">
             <Input
               type="url"
@@ -69,19 +70,18 @@ export function PRAnalyzer({
               }}
               disabled={loading}
             />
-            {localError && (
+
+            {/* Single inline error — handles both local validation and server errors */}
+            {displayError && (
               <div className="flex items-center gap-2 px-1 animate-fade-in">
                 <div className="w-1 h-1 rounded-full bg-rose-400 flex-shrink-0" />
                 <p className="text-[12px] font-semibold text-rose-500 tracking-wide">
-                  Invalid PR URL. Use format:{" "}
-                  <span className="ml-1 font-mono text-[12px] text-rose-600 font-bold">
-                    https://github.com/owner/repo/pull/123
-                  </span>
+                  {displayError}
                 </p>
               </div>
             )}
 
-            {aiUnavailable && !localError && !error && (
+            {aiUnavailable && !displayError && (
               <div className="flex items-center gap-2 px-1 animate-fade-in">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
                 <p className="text-[12px] font-medium text-amber-600 tracking-wide">
@@ -90,34 +90,7 @@ export function PRAnalyzer({
               </div>
             )}
           </div>
-          {serverError && (
-            <div className="relative animate-slide-up">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500 to-red-500 rounded-[1.5rem] blur opacity-10" />
-              <div className="relative bg-white/70 backdrop-blur-xl border border-rose-100 rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-rose-50 bg-white/40">
-                  <div className="flex items-center justify-center p-1.5 bg-white rounded-lg shadow-sm border border-rose-200 flex-shrink-0">
-                    <XCircle size={15} className="text-rose-500" />
-                  </div>
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-rose-400">
-                    Analysis Failed
-                  </h3>
-                </div>
-                <div className="flex items-start gap-4 px-5 py-5">
-                  <div className="flex-shrink-0 w-9 h-9 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-center">
-                    <AlertTriangle size={16} className="text-rose-500" />
-                  </div>
-                  <div className="space-y-1 pt-0.5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-400">
-                      What went wrong
-                    </p>
-                    <p className="text-slate-700 text-[14px] font-semibold leading-relaxed">
-                      {typeof error === "string" ? error : error?.message}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+
           <div className="flex gap-3 pt-1">
             <button
               type="submit"
