@@ -124,7 +124,7 @@ def _sanitize_code(code: str) -> str:
             indent += 1
         # Reset if brace opens and closes on same line
         if line.count("{") > 0 and line.count("{") == line.count("}"):
-            pass  # balanced — don't change indent
+            pass
 
     code = "\n".join(result)
 
@@ -254,13 +254,13 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
             result = dict(response.parsed)
             result["source"] = "llm"
 
-            # Sanitize code examples
+
             for file_review in result.get("file_reviews", []):
                 for issue in file_review.get("issues", []):
                     if issue.get("code_example"):
                         issue["code_example"] = _sanitize_code(issue["code_example"])
 
-            # Structural validation
+            
             if not _validate_structure(result, context):
                 raise ValueError("Structure validation failed")
 
