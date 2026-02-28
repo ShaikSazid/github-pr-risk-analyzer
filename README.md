@@ -46,6 +46,7 @@
 - **ML Risk Scoring** — Random Forest model trained on multi-repository PR data outputs a 0–10 score and LOW / MEDIUM / HIGH label
 - **Smart Diff Selection** — diff sent to the LLM is trimmed based on risk score, keeping token usage minimal and focused
 - **Structured AI Review** — Gemini returns strict JSON: executive summary, mitigation steps, and per-file issues with syntax-highlighted code examples
+- **Skeleton Loading** — animated layout skeleton mirrors the exact structure of the results panel while analysis runs
 - **Typed Error Handling** — invalid URLs, GitHub API failures, LLM quota exhaustion, and server crashes each surface with specific, clear messages in the UI
 - **Glassmorphism UI** — clean, modern React frontend with a dark code viewer, animated results panel, and responsive layout
 
@@ -117,13 +118,13 @@ github-pr-risk-analyzer/
 │   ├── vite.config.js
 │   ├── index.html
 │   └── src/
-│       ├── App.jsx               # Root: wires analyzer → error → results
+│       ├── App.jsx               # Root: wires analyzer → skeleton → results
 │       ├── main.jsx
 │       ├── components/
 │       │   ├── features/
-│       │   │   ├── PRAnalyzer.jsx      # URL input form + validation
-│       │   │   ├── ResultsPanel.jsx    # Full results UI with syntax highlighting
-│       │   │   ├── ErrorPanel.jsx      # Typed error display
+│       │   │   ├── PRAnalyzer.jsx       # URL input form + inline validation
+│       │   │   ├── ResultsPanel.jsx     # Full results UI with syntax highlighting
+│       │   │   ├── SkeletonLoader.jsx   # Animated layout skeleton while analyzing
 │       │   │   └── RiskVisualization.jsx
 │       │   ├── common/
 │       │   │   ├── ErrorMessage.jsx
@@ -146,8 +147,6 @@ github-pr-risk-analyzer/
 │       │   └── constants.js      # API_BASE_URL, APP_CONFIG
 │       └── utils/
 │           └── validators.js     # validateGitHubURL
-│
-└── docs/
 ```
 
 ---
@@ -252,11 +251,6 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ```bash
 pdm install
-```
-
-Start the server:
-
-```bash
 pdm run uvicorn backend.app.main:app --reload
 ```
 
@@ -273,8 +267,6 @@ Create `frontend/.env`:
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-Start the dev server:
-
 ```bash
 npm run dev
 ```
@@ -288,7 +280,8 @@ App runs at `http://localhost:5173`.
 1. Open `http://localhost:5173`
 2. Paste a GitHub PR URL — e.g. `https://github.com/facebook/react/pull/31000`
 3. Click **Analyze PR**
-4. Get back a risk score, executive summary, mitigation steps, and per-file findings with code examples
+4. The skeleton loader appears while the ML model and Gemini process the PR
+5. Results appear with a risk score, executive summary, mitigation steps, and per-file findings with code examples
 
 ---
 
@@ -299,14 +292,14 @@ The frontend surfaces every failure with a specific message — nothing is swall
 | Error | What the user sees |
 |---|---|
 | Invalid URL format | Inline validation under the input field |
-| PR not found / private | GitHub API error card with hint |
-| LLM quota exceeded | AI quota error with retry guidance |
-| Server unreachable | Connection error with status |
-| ML model down | Server error with description |
+| PR not found / private | GitHub API error message |
+| LLM quota exceeded | AI quota error message |
+| Server unreachable | Connection error message |
+| ML model down | Server error message |
 | Request timeout | Timeout message with suggestion to retry |
 
 ---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see the LICENSE file for details.
