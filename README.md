@@ -1,12 +1,23 @@
 # GitHub PR Risk Analyzer
 
-> An internal AI-powered security review tool that scores risk on GitHub Pull Requests using a trained ML model, then generates a deep code review using Google Gemini 2.5 Flash.
+> An AI-powered security review tool that scores risk on GitHub Pull Requests using an ML model, then generates a structured code review using Google Gemini.
 
 ---
 
+## Project Overview
+
+Analyzes a GitHub Pull Request URL, predicts a risk score/label, and generates a security-focused review.
+Helps teams triage PRs by focusing deeper review effort on higher-risk changes.
+
+## Project Summary
+
+Objectives: consistent, fast PR risk scoring + actionable review output (summary, mitigations, per-file issues).
+Architecture: React frontend → FastAPI backend → GitHub fetch + ML inference + Gemini review → single JSON response.
+Future: caching, repo/org policy thresholds, and expanded training data/features.
+
 ## Pipeline Overview
 
-```
+```text
   GitHub PR URL
        │
        ▼
@@ -39,8 +50,6 @@
   └─────────────────┘
 ```
 
----
-
 ## Features
 
 - **ML Risk Scoring** — Random Forest model trained on multi-repository PR data outputs a 0–10 score and LOW / MEDIUM / HIGH label
@@ -50,23 +59,19 @@
 - **Typed Error Handling** — invalid URLs, GitHub API failures, LLM quota exhaustion, and server crashes each surface with specific, clear messages in the UI
 - **Glassmorphism UI** — clean, modern React frontend with a dark code viewer, animated results panel, and responsive layout
 
----
-
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, Vite, Tailwind CSS, Axios |
+| Frontend | React, Vite, Tailwind CSS, Axios |
 | Backend | FastAPI, Python, httpx (async) |
 | ML Model | scikit-learn Random Forest, joblib |
 | LLM | Google Gemini 2.5 Flash (`google-genai`) |
 | Package Manager | PDM (Python), npm (Node) |
 
----
-
 ## Project Structure
 
-```
+```text
 github-pr-risk-analyzer/
 ├── .env                          # Root env (GITHUB_TOKEN, GEMINI_API_KEY)
 ├── pyproject.toml                # PDM project config
@@ -151,6 +156,29 @@ github-pr-risk-analyzer/
 
 ---
 
+## Features
+
+- **ML Risk Scoring** — Random Forest model trained on multi-repository PR data outputs a 0–10 score and LOW / MEDIUM / HIGH label
+- **Smart Diff Selection** — diff sent to the LLM is trimmed based on risk score, keeping token usage minimal and focused
+- **Structured AI Review** — Gemini returns strict JSON: executive summary, mitigation steps, and per-file issues with syntax-highlighted code examples
+- **Skeleton Loading** — animated layout skeleton mirrors the exact structure of the results panel while analysis runs
+- **Typed Error Handling** — invalid URLs, GitHub API failures, LLM quota exhaustion, and server crashes each surface with specific, clear messages in the UI
+- **Glassmorphism UI** — clean, modern React frontend with a dark code viewer, animated results panel, and responsive layout
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React, Vite, Tailwind CSS, Axios |
+| Backend | FastAPI, Python, httpx (async) |
+| ML Model | scikit-learn Random Forest, joblib |
+| LLM | Google Gemini 2.5 Flash (`google-genai`) |
+| Package Manager | PDM (Python), npm (Node) |
+
+---
+
 ## ML Model
 
 The Random Forest model uses **22 features** extracted purely from GitHub API metadata — no source code reading required at the ML layer.
@@ -225,7 +253,7 @@ Returns server status.
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.12+
 - Node.js 18+
 - [PDM](https://pdm-project.org/) — Python package manager
 - A GitHub personal access token
