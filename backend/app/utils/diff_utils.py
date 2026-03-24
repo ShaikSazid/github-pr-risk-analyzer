@@ -2,7 +2,6 @@ from typing import Dict, List
 
 MAX_DIFF_CHARS = 4000
 
-
 def build_diff_summary(files: List[Dict]) -> Dict:
     extensions = set()
     total_additions = 0
