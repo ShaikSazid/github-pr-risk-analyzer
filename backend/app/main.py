@@ -38,7 +38,7 @@ app.add_middleware(
 @app.exception_handler(GitHubAPIError)
 async def github_error_handler(request: Request, exc: GitHubAPIError):
     return JSONResponse(
-        status_code=400,
+        status_code=502,
         content={"message": exc.message},
     )
 
