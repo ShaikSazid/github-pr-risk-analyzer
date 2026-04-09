@@ -4,7 +4,10 @@ from typing import Tuple
 from backend.app.core.exceptions import InvalidPullRequestURLError
 
 PR_REGEX = re.compile(
-    r"^https://github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)/pull/(?P<number>\d+)$"
+    r"^https://github\.com/"
+    r"(?P<owner>[A-Za-z0-9](?:-?[A-Za-z0-9])*)/"
+    r"(?P<repo>[A-Za-z0-9._-]+)/"
+    r"pull/(?P<number>\d+)$"
 )
 
 
