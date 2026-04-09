@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Helper: Safe datetime parsing
 
+
 def parse_github_datetime(dt_str: str | None) -> datetime | None:
     if not dt_str:
         return None
@@ -33,7 +34,9 @@ def parse_github_datetime(dt_str: str | None) -> datetime | None:
     except Exception:
         return None
 
+
 # Build ML Input
+
 
 def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
     """
@@ -44,9 +47,7 @@ def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
     pr_created = parse_github_datetime(pr.get("created_at"))
 
     # -------- Author Account Age --------
-    user_created = parse_github_datetime(
-        pr.get("user", {}).get("created_at")
-    )
+    user_created = parse_github_datetime(pr.get("user", {}).get("created_at"))
 
     if pr_created and user_created:
         author_account_age_days = (pr_created - user_created).days
@@ -55,7 +56,11 @@ def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
 
     # -------- Labels --------
     labels_list = pr.get("labels") or []
-    labels = ", ".join(label.get("name", "") for label in labels_list) if labels_list else "none"
+    labels = (
+        ", ".join(label.get("name", "") for label in labels_list)
+        if labels_list
+        else "none"
+    )
 
     # -------- Milestone --------
     milestone = pr.get("milestone", {})
@@ -122,7 +127,6 @@ async def analyze_pr(request: AnalyzePRRequest):
         "risk_label": ml_result["risk_label"],
         "risk_score": ml_result["risk_score"],
         "top_risk_factors": ml_result.get("top_risk_factors", []),
-
         "title": pr.get("title", ""),
         "body": pr.get("body", ""),
         "file_names": [f.get("filename") for f in files],
@@ -133,11 +137,10 @@ async def analyze_pr(request: AnalyzePRRequest):
 
     logger.info(f"LLM OUTPUT: {review}")
 
-    # ---------------- Final Response ----------------
     return {
-    "risk_label": ml_result["risk_label"],
-    "risk_score": ml_result["risk_score"],
-    "review_comments": review,
-    "pr_url": str(request.pr_url),
-    "ai_unavailable": review.get("source") == "fallback"
-}
+        "risk_label": ml_result["risk_label"],
+        "risk_score": ml_result["risk_score"],
+        "review_comments": review,
+        "pr_url": str(request.pr_url),
+        "ai_unavailable": review.get("source") == "fallback",
+    }

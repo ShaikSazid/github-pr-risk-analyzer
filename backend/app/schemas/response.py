@@ -25,3 +25,4 @@ class AnalyzePRResponse(BaseModel):
     risk_score: float = Field(..., ge=0.0, le=10.0)
     review_comments: LLMReview
     ai_unavailable: bool = False
+    pr_url: str
