@@ -94,6 +94,12 @@ def predict_risk(pr_features: dict) -> dict:
     df = pd.DataFrame([pr_features])[_feature_columns]
 
     prob = _model.predict_proba(df)[0][1]
+
+    if not (0.0 <= prob <= 1.0):
+        print("Model returned out-of-range probability: %s — clamping to [0.0, 1.0]")
+    else:
+        prob = max(0.0, min(1.0, prob))
+
     risk_score = float(round(prob * 10, 1))
 
     if risk_score <= 3:

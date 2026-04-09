@@ -1,7 +1,7 @@
 import logging
 import asyncio
 import re
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 from google import genai
 from google.genai.errors import ClientError
@@ -97,7 +97,9 @@ def _sanitize_code(code: str) -> str:
     single = re.sub(r"(?<!\n)\}", "\n}", single)
 
     # Insert newlines after colons that start blocks (Python)
-    single = re.sub(r":(?=\s*(?:def |class |if |for |while |return |[a-zA-Z_]))", ":\n    ", single)
+    single = re.sub(
+        r":(?=\s*(?:def |class |if |for |while |return |[a-zA-Z_]))", ":\n    ", single
+    )
 
     # Insert newlines after common statement keywords
     single = re.sub(r"(return\s+[^;{\n]+);", r"\1;\n", single)
@@ -114,7 +116,7 @@ def _sanitize_code(code: str) -> str:
             continue
 
         # Decrease indent for closing braces/brackets
-        if line.startswith(("}",")","]")):
+        if line.startswith(("}", ")", "]")):
             indent = max(0, indent - 1)
 
         result.append("    " * indent + line)
@@ -254,13 +256,11 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
             result = dict(response.parsed)
             result["source"] = "llm"
 
-
             for file_review in result.get("file_reviews", []):
                 for issue in file_review.get("issues", []):
                     if issue.get("code_example"):
                         issue["code_example"] = _sanitize_code(issue["code_example"])
 
-            
             if not _validate_structure(result, context):
                 raise ValueError("Structure validation failed")
 
@@ -277,7 +277,7 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
             logger.warning(f"Attempt {attempt} failed: {e}")
 
         if attempt < MAX_RETRIES:
-            await asyncio.sleep(2 ** attempt)
+            await asyncio.sleep(2**attempt)
 
     logger.error("LLM failed after retries")
 
@@ -285,5 +285,5 @@ async def generate_review(context: Dict) -> Dict[str, Any]:
         "risk_explanation": "LLM validation failed. Manual review recommended.",
         "mitigation_steps": ["Perform manual review."],
         "file_reviews": [],
-        "source": "fallback"
+        "source": "fallback",
     }
