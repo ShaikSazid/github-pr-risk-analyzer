@@ -25,10 +25,7 @@ def _extract_relevant_lines(patch: str, include_deletions: bool) -> List[str]:
     return selected
 
 
-def build_selected_patch(
-    files_data: List[Dict],
-    risk_score: float
-) -> str:
+def build_selected_patch(files_data: List[Dict], risk_score: float) -> str:
 
     if risk_score <= 3:
         return ""
@@ -38,7 +35,7 @@ def build_selected_patch(
     sorted_files = sorted(
         files_data,
         key=lambda f: f.get("additions", 0) + f.get("deletions", 0),
-        reverse=True
+        reverse=True,
     )
 
     selected_files = sorted_files[:MAX_FILES]
@@ -47,7 +44,7 @@ def build_selected_patch(
     total_chars = 0
 
     for file in selected_files:
-        filename = file.get("filename")
+        filename = file.get("filename") or f"unknown_file_{id(file)}"
         patch = file.get("patch", "")
 
         relevant_lines = _extract_relevant_lines(patch, include_deletions)
