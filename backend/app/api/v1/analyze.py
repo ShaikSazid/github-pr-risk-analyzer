@@ -46,7 +46,7 @@ def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
 
     pr_created = parse_github_datetime(pr.get("created_at"))
 
-    # -------- Author Account Age --------
+    #  Author Account Age
     user_created = parse_github_datetime(pr.get("user", {}).get("created_at"))
 
     if pr_created and user_created:
@@ -54,7 +54,7 @@ def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
     else:
         author_account_age_days = 0
 
-    # -------- Labels --------
+    #  Labels
     labels_list = pr.get("labels") or []
     labels = (
         ", ".join(label.get("name", "") for label in labels_list)
@@ -62,20 +62,20 @@ def build_ml_input(pr: Dict, files: List[Dict]) -> Dict:
         else "none"
     )
 
-    # -------- Milestone --------
+    #  Milestone
     milestone = pr.get("milestone", {})
     milestone_title = milestone.get("title") if milestone else "none"
     milestone_title = milestone_title or "none"
 
-    # -------- File Extensions --------
+    #  File Extensions
     extensions = {
-        f.get("filename", "").rsplit(".", 1)[-1]
+        f.get("filename", "").rsplit(".", 1)[-1].lower()
         for f in files
         if "." in f.get("filename", "")
     }
     file_extensions = ", ".join(extensions) if extensions else "none"
 
-    # -------- Requested Reviewers --------
+    #  Requested Reviewers
     requested_reviewers = pr.get("requested_reviewers") or []
     reviewers_count = len(requested_reviewers)
 
