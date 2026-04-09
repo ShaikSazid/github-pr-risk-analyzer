@@ -2,8 +2,9 @@ import joblib
 import pandas as pd
 from pathlib import Path
 
-from pandas.core.base import NoNewAttributesMixin
 import numpy as np
+
+from backend.app.core.exceptions import MLServiceError
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 MODEL_DIR = BASE_DIR / "ml" / "models"
@@ -16,8 +17,14 @@ def _load_model():
     global _model, _feature_columns
 
     if _model is None:
-        _model = joblib.load(MODEL_DIR / "rf_model.joblib")
-        _feature_columns = joblib.load(MODEL_DIR / "feature_columns.joblib")
+        try:
+            model = joblib.load(MODEL_DIR / "rf_model.joblib")
+            feature_columns = joblib.load(MODEL_DIR / "feature_columns.joblib")
+
+            _model = model
+            _feature_columns = feature_columns
+        except Exception as e:
+            raise MLServiceError("Model Initialization failed") from e
 
 
 def prepare_features(pr_data: dict) -> dict:
