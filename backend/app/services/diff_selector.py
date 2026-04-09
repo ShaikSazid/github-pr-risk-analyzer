@@ -8,19 +8,22 @@ MAX_TOTAL_CHARS = 15000
 def _extract_relevant_lines(patch: str, include_deletions: bool) -> List[str]:
     if not patch:
         return []
-
     lines = patch.splitlines()
     selected = []
+    seen = set()  # Track already-added line indices
 
     for i, line in enumerate(lines):
         if line.startswith("+") and not line.startswith("+++"):
-            # include 2 lines before and after for context
             start = max(i - 2, 0)
             end = min(i + 3, len(lines))
-            selected.extend(lines[start:end])
-
+            for j in range(start, end):
+                if j not in seen:
+                    selected.append(lines[j])
+                    seen.add(j)
         if include_deletions and line.startswith("-") and not line.startswith("---"):
-            selected.append(line)
+            if i not in seen:
+                selected.append(line)
+                seen.add(i)
 
     return selected
 
