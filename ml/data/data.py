@@ -140,7 +140,7 @@ def get_pr_features(pr, repo_name):
         "body": pr.body,
     }
 
-    # --- 1. Author Metrics ---
+    # 1. Author Metrics
     pr_data["author_association"] = pr.author_association
     if pr.user:
         account_age = (pr.created_at - pr.user.created_at).days
@@ -148,14 +148,14 @@ def get_pr_features(pr, repo_name):
     else:
         pr_data["author_account_age_days"] = 0
 
-    # --- 2. Size & Complexity ---
+    # 2. Size & Complexity
     pr_data["additions"] = pr.additions
     pr_data["deletions"] = pr.deletions
     pr_data["changed_files"] = pr.changed_files
     pr_data["commits_count"] = pr.commits
     pr_data["body_len"] = len(pr.body) if pr.body else 0
 
-    # --- 3. Time Metrics ---
+    # 3. Time Metrics
     pr_data["created_day_of_week"] = pr.created_at.weekday()
     pr_data["created_hour"] = pr.created_at.hour
 
@@ -165,7 +165,7 @@ def get_pr_features(pr, repo_name):
     else:
         pr_data["hours_to_merge"] = -1
 
-    # --- 4. Community Interaction ---
+    # 4. Community Interaction
     pr_data["review_comments_count"] = pr.review_comments
     pr_data["issue_comments_count"] = pr.comments
 
@@ -174,15 +174,15 @@ def get_pr_features(pr, repo_name):
     except Exception:
         pr_data["requested_reviewers_count"] = 0
 
-    # --- 5. Labels & Milestones ---
-    pr_data["labels"] = ", ".join([lable.name for lable in pr.labels])
+    # 5. Labels & Milestones
+    pr_data["labels"] = ", ".join([x.name for x in pr.labels])
     pr_data["milestone"] = pr.milestone.title if pr.milestone else None
 
-    # --- 6. Branches ---
+    # 6. Branches
     pr_data["head_branch"] = pr.head.ref
     pr_data["base_branch"] = pr.base.ref
 
-    # --- 7. File Extensions ---
+    # 7. File Extensions
     extensions = set()
     try:
         files = pr.get_files()
