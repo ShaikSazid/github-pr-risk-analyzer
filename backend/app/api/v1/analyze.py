@@ -130,7 +130,7 @@ async def analyze_pr(request: AnalyzePRRequest):
         "title": pr.get("title", ""),
         "body": pr.get("body", ""),
         "file_names": [f.get("filename") for f in files],
-        "diff_summary": selected_patch,
+        "selected_patch": selected_patch,
     }
 
     review = await generate_review(llm_context)
