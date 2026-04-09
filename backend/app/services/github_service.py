@@ -18,7 +18,7 @@ def _headers():
 
 async def _get(url: str):
     """Reusable GET helper with clean error mapping"""
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with httpx.AsyncClient(timeout=settings.HTTP_TIMEOUT) as client:
         response = await client.get(url, headers=_headers())
 
     # SUCCESS
@@ -32,17 +32,11 @@ async def _get(url: str):
     # FORBIDDEN
     if response.status_code == 403:
         if "rate limit" in response.text.lower():
-            raise GitHubAPIError(
-                "GitHub rate limit reached. Please try again later."
-            )
-        raise GitHubAPIError(
-            "This repository is private or not accessible."
-        )
+            raise GitHubAPIError("GitHub rate limit reached. Please try again later.")
+        raise GitHubAPIError("This repository is private or not accessible.")
 
     # OTHER ERRORS
-    raise GitHubAPIError(
-        "Unable to fetch data from GitHub. Please try again."
-    )
+    raise GitHubAPIError("Unable to fetch data from GitHub. Please try again.")
 
 
 async def fetch_pr(owner: str, repo: str, pr_number: int) -> dict:
@@ -55,9 +49,7 @@ async def fetch_pr_files(owner: str, repo: str, pr_number: int) -> list[dict]:
     return await _get(url)
 
 
-async def fetch_recent_commits(
-    owner: str, repo: str, limit: int = 5
-) -> list[str]:
+async def fetch_recent_commits(owner: str, repo: str, limit: int = 5) -> list[str]:
     url = f"{BASE_URL}/repos/{owner}/{repo}/commits"
 
     commits = await _get(url)

@@ -3,16 +3,17 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 
+
 class Settings(BaseSettings):
     GITHUB_TOKEN: str = ""
     GEMINI_API_KEY: str
     ENV: str = "development"
     LOG_LEVEL: str = "INFO"
+    HTTP_TIMEOUT: int = 10
 
     model_config = SettingsConfigDict(
-        env_file=BASE_DIR / ".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
+        env_file=BASE_DIR / ".env", env_file_encoding="utf-8", extra="ignore"
     )
+
 
 settings = Settings()
